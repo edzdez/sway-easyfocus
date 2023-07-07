@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 gtk = "0.17"
-gtk-layer-shell = "0.6"
+gtk-layer-shell = { version = "0.6", features = ["v0_6"] }
+
 swayipc = "3.0"
 
 anyhow = "1.0"
+

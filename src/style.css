@@ -1,0 +1,10 @@
+window {
+    background: rgba(0, 0, 0, 0);
+}
+
+window label {
+    background: #1d1f21;
+    font-family: monospace;
+    font-weight: bold;
+    padding: 0px 4px;
+}

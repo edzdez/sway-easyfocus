@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use anyhow::{Context, Result};
 use swayipc::*;
 
@@ -18,4 +20,24 @@ pub fn get_focused_workspace(conn: &mut Connection) -> Result<Node> {
         .unwrap();
 
     Ok(focused_workspace)
+}
+
+pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
+    let mut nodes = vec![];
+
+    let mut q = VecDeque::new();
+    q.push_back(workspace.clone());
+    while !q.is_empty() {
+        let node = q.pop_back().unwrap(); // we know that the queue is not empty
+
+        if node.nodes.is_empty() { // we have a window
+            nodes.push(node.clone());
+        }
+
+        for child in node.nodes {
+            q.push_back(child.clone());
+        }
+    }
+
+    nodes
 }
