@@ -40,6 +40,7 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
         }
     }
 
+    nodes.reverse();
     nodes
 }
 
@@ -51,5 +52,6 @@ pub fn focus(idx: usize) {
     );
 
     let con_id = windows[idx].id;
-    conn.run_command(format!("[con_id={}] focus", con_id)).expect("failed to communicate with sway");
+    conn.run_command(format!("[con_id={}] focus", con_id))
+        .expect("failed to communicate with sway");
 }
