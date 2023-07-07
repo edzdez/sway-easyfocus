@@ -1,23 +1,12 @@
-use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow};
+mod sway;
+mod ui;
 
-fn main() {
-    let app = Application::builder()
-        .application_id("org.example.HelloWorld")
-        .build();
+fn main() -> anyhow::Result<()> {
+    let mut conn = sway::acquire_connection()?;
+    let focused_workspace = sway::get_focused_workspace(&mut conn)?;
+    dbg!(&focused_workspace);
 
-    app.connect_activate(|app| {
-        // We create the main window.
-        let win = ApplicationWindow::builder()
-            .application(app)
-            .default_width(320)
-            .default_height(200)
-            .title("Hello, World!")
-            .build();
+    // ui::run_ui();
 
-        // Don't forget to make all widgets visible.
-        win.show_all();
-    });
-
-    app.run();
+    Ok(())
 }
