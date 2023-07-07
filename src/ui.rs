@@ -4,6 +4,7 @@ use swayipc::{Connection, Node};
 
 use crate::sway;
 
+// TODO: make this not hardcoded (clap?)
 const PADDING_X: i32 = 4;
 const PADDING_Y: i32 = 2;
 
@@ -19,6 +20,10 @@ fn calculate_geometry(window: &Node) -> (i32, i32) {
 }
 
 fn build_ui(app: &Application, workspace: &Node) {
+    // get windows from sway
+    let windows = sway::get_all_windows(workspace);
+    let num_windows = windows.len();
+
     let window = gtk::ApplicationWindow::new(app);
 
     // before the window is first realized, set it up to be a layer surface
@@ -28,14 +33,22 @@ fn build_ui(app: &Application, workspace: &Node) {
 
     // receive keyboard events from the compositor
     gtk_layer_shell::set_keyboard_mode(&window, gtk_layer_shell::KeyboardMode::Exclusive);
-    window.connect_key_press_event(|window, event| {
+
+    // TODO: export to function
+    window.connect_key_press_event(move |window, event| {
         let keyval = event.keyval().name().unwrap();
-        if keyval == "Escape" {
-            window.close();
-        } else if keyval.len() == 1 && keyval.chars().next().unwrap().is_alphabetic() {
-            dbg!(&keyval);
+        if keyval.len() == 1 {
+            let c = keyval.chars().next().unwrap();
+            if c.is_alphabetic() && c.is_lowercase() {
+                let c_index = c as usize - 'a' as usize;
+                if c_index < num_windows {
+                    // dbg!(&keyval);
+                    sway::focus(c_index);
+                }
+            }
         }
 
+        window.close();
         Inhibit(false)
     });
 
@@ -47,7 +60,6 @@ fn build_ui(app: &Application, workspace: &Node) {
 
     let fixed = gtk::Fixed::new();
 
-    let windows = sway::get_all_windows(workspace);
     for (idx, window) in windows.iter().enumerate() {
         let (x, y) = calculate_geometry(window);
         let label = gtk::Label::new(Some(""));

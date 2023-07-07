@@ -30,7 +30,8 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
     while !q.is_empty() {
         let node = q.pop_back().unwrap(); // we know that the queue is not empty
 
-        if node.nodes.is_empty() { // we have a window
+        if node.nodes.is_empty() {
+            // we have a window
             nodes.push(node.clone());
         }
 
@@ -40,4 +41,15 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
     }
 
     nodes
+}
+
+pub fn focus(idx: usize) {
+    // TODO: REFACTORRRRR
+    let mut conn = acquire_connection().expect("failed to connect to sway");
+    let windows = get_all_windows(
+        &get_focused_workspace(&mut conn).expect("failed to communicate with sway"),
+    );
+
+    let con_id = windows[idx].id;
+    conn.run_command(format!("[con_id={}] focus", con_id)).expect("failed to communicate with sway");
 }
