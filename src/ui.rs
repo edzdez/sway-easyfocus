@@ -10,9 +10,11 @@ const PADDING_X: i32 = 4;
 const PADDING_Y: i32 = 2;
 
 fn calculate_geometry(window: &Node) -> (i32, i32) {
+    // TODO: this doesn't work properly with stacked windows
     let rect = window.rect;
     let window_rect = window.window_rect;
     let deco_rect = window.deco_rect;
+    dbg!(&window);
 
     let x = rect.x + window_rect.x + deco_rect.x + PADDING_X;
     let y = rect.y - (deco_rect.height - PADDING_Y);
