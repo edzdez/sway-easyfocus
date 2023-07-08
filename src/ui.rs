@@ -1,4 +1,5 @@
-use anyhow::Result;
+use std::sync::{Arc, Mutex};
+
 use gtk::{prelude::*, Application, CssProvider, StyleContext};
 use swayipc::{Connection, Node};
 
@@ -19,10 +20,24 @@ fn calculate_geometry(window: &Node) -> (i32, i32) {
     (x, y)
 }
 
-fn build_ui(app: &Application, workspace: &Node) {
+fn handle_keypress(conn: Arc<Mutex<Connection>>, windows: &[Node], keyval: &str) {
+    if keyval.len() == 1 {
+        // we can unwrap because the keyval has one character
+        let c = keyval.chars().next().unwrap();
+        if c.is_alphabetic() && c.is_lowercase() {
+            // this is kinda hacky
+            let c_index = c as usize - 'a' as usize;
+            if c_index < windows.len() {
+                sway::focus(conn, windows, c_index);
+            }
+        }
+    }
+}
+
+fn build_ui(app: &Application, conn: Arc<Mutex<Connection>>) {
     // get windows from sway
-    let windows = sway::get_all_windows(workspace);
-    let num_windows = windows.len();
+    let workspace = sway::get_focused_workspace(conn.clone());
+    let windows = sway::get_all_windows(&workspace);
 
     let window = gtk::ApplicationWindow::new(app);
 
@@ -34,20 +49,13 @@ fn build_ui(app: &Application, workspace: &Node) {
     // receive keyboard events from the compositor
     gtk_layer_shell::set_keyboard_mode(&window, gtk_layer_shell::KeyboardMode::Exclusive);
 
-    // TODO: export to function
+    let windows_clone = windows.clone();
     window.connect_key_press_event(move |window, event| {
-        let keyval = event.keyval().name().unwrap();
-        if keyval.len() == 1 {
-            let c = keyval.chars().next().unwrap();
-            if c.is_alphabetic() && c.is_lowercase() {
-                let c_index = c as usize - 'a' as usize;
-                if c_index < num_windows {
-                    // dbg!(&keyval);
-                    sway::focus(c_index);
-                }
-            }
-        }
-
+        let keyval = event
+            .keyval()
+            .name()
+            .expect("the key pressed does not have a name?");
+        handle_keypress(conn.clone(), &windows_clone, &keyval);
         window.close();
         Inhibit(false)
     });
@@ -78,29 +86,26 @@ fn load_css() {
     let provider = CssProvider::new();
     provider
         .load_from_data(include_bytes!("style.css"))
-        .unwrap();
+        .expect("failed to load css");
 
     // Add the provider to the default screen
     StyleContext::add_provider_for_screen(
+        // we can unwrap because there should be a default screen
         &gtk::gdk::Screen::default().unwrap(),
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 }
 
-pub fn run_ui(mut conn: Connection) -> Result<()> {
-    let focused_workspace = sway::get_focused_workspace(&mut conn)?;
-
+pub fn run_ui(conn: Arc<Mutex<Connection>>) {
     let app = Application::builder()
         .application_id("com.github.edzdez.sway-easyfocus")
         .build();
 
     app.connect_startup(|_| load_css());
     app.connect_activate(move |app| {
-        build_ui(app, &focused_workspace);
+        build_ui(app, conn.clone());
     });
 
     app.run();
-
-    Ok(())
 }

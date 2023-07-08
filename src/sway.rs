@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, sync::{Arc, Mutex}};
 
 use anyhow::{Context, Result};
 use swayipc::*;
@@ -7,19 +7,20 @@ pub fn acquire_connection() -> Result<Connection> {
     swayipc::Connection::new().context("failed to connect to sway")
 }
 
-pub fn get_tree(conn: &mut Connection) -> Result<Node> {
-    conn.get_tree().context("failed to communicate with sway")
+pub fn get_tree(conn: Arc<Mutex<Connection>>) -> Result<Node> {
+    let mut conn_lock = conn.lock().unwrap();
+    conn_lock.get_tree().context("failed to communicate with sway")
 }
 
-pub fn get_focused_workspace(conn: &mut Connection) -> Result<Node> {
-    let root_node = get_tree(conn)?;
+pub fn get_focused_workspace(conn: Arc<Mutex<Connection>>) -> Node {
+    let root_node = get_tree(conn).expect("count not get tree from swayipc");
     let focused_workspace = root_node
         .find_focused(|n| n.node_type == swayipc::NodeType::Output)
-        .unwrap()
+        .expect("could not find focused output")
         .find_focused(|n| n.node_type == swayipc::NodeType::Workspace)
-        .unwrap();
+        .expect("could not find focused workspace");
 
-    Ok(focused_workspace)
+    focused_workspace
 }
 
 pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
@@ -28,10 +29,11 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
     let mut q = VecDeque::new();
     q.push_back(workspace.clone());
     while !q.is_empty() {
-        let node = q.pop_back().unwrap(); // we know that the queue is not empty
+        // we can unwrap because we know that the queue is not empty
+        let node = q.pop_back().unwrap();
 
+        // if we have a window
         if node.nodes.is_empty() {
-            // we have a window
             nodes.push(node.clone());
         }
 
@@ -44,14 +46,9 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
     nodes
 }
 
-pub fn focus(idx: usize) {
-    // TODO: REFACTORRRRR
-    let mut conn = acquire_connection().expect("failed to connect to sway");
-    let windows = get_all_windows(
-        &get_focused_workspace(&mut conn).expect("failed to communicate with sway"),
-    );
-
+pub fn focus(conn: Arc<Mutex<Connection>>, windows: &[Node], idx: usize) {
     let con_id = windows[idx].id;
-    conn.run_command(format!("[con_id={}] focus", con_id))
-        .expect("failed to communicate with sway");
+    let mut conn_lock = conn.lock().unwrap();
+    conn_lock.run_command(format!("[con_id={}] focus", con_id))
+        .expect("failed to focus container");
 }
