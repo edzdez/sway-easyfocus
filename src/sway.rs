@@ -37,13 +37,23 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
         let node = q.pop_back().unwrap();
 
         // if we have a window
-        if node.node_type == NodeType::Con && node.nodes.is_empty() {
+        if (node.node_type == NodeType::Con || node.node_type == NodeType::FloatingCon)
+            && node.nodes.is_empty()
+        {
             nodes.push(node.clone());
         }
 
+        // tiled/tabbed/stacked nodes
         for child in node.nodes {
             q.push_back(child.clone());
         }
+
+        /*
+        // floating nodes
+        for child in node.floating_nodes {
+            q.push_back(child.clone());
+        }
+        */
     }
 
     nodes.reverse();
