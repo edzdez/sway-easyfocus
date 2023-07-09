@@ -16,15 +16,18 @@ pub fn get_tree(conn: Arc<Mutex<Connection>>) -> Node {
         .expect("failed to communicate with sway")
 }
 
-pub fn get_focused_workspace(conn: Arc<Mutex<Connection>>) -> Node {
+pub fn get_focused_output(conn: Arc<Mutex<Connection>>) -> Node {
     let root_node = get_tree(conn);
-    let focused_workspace = root_node
+    root_node
         .find_focused(|n| n.node_type == swayipc::NodeType::Output)
         .expect("could not find focused output")
-        .find_focused(|n| n.node_type == swayipc::NodeType::Workspace)
-        .expect("could not find focused workspace");
+}
 
-    focused_workspace
+pub fn get_focused_workspace(output: &Node) -> Node {
+    output
+        .clone()
+        .find_focused(|n| n.node_type == swayipc::NodeType::Workspace)
+        .expect("could not find focused workspace")
 }
 
 pub fn get_all_windows(workspace: &Node) -> Vec<Node> {

@@ -5,14 +5,14 @@ use swayipc::{Connection, Node};
 
 use crate::{cli::Args, sway, utils};
 
-fn calculate_geometry(workspace: &Node, window: &Node, args: Arc<Args>) -> (i32, i32) {
+fn calculate_geometry(window: &Node, output: &Node, args: Arc<Args>) -> (i32, i32) {
     // TODO: this doesn't work properly with stacked windows
     let rect = window.rect;
     let window_rect = window.window_rect;
     let deco_rect = window.deco_rect;
 
-    let anchor_x = workspace.rect.x;
-    let anchor_y = workspace.rect.y;
+    let anchor_x = output.rect.x;
+    let anchor_y = output.rect.y;
 
     let rel_x = rect.x + window_rect.x + deco_rect.x + args.label_margin_x;
     let rel_y = rect.y - (deco_rect.height - args.label_margin_y);
@@ -36,7 +36,8 @@ fn handle_keypress(conn: Arc<Mutex<Connection>>, windows: &[Node], keyval: &str)
 
 fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     // get windows from sway
-    let workspace = sway::get_focused_workspace(conn.clone());
+    let output = sway::get_focused_output(conn.clone());
+    let workspace = sway::get_focused_workspace(&output);
     let windows = sway::get_all_windows(&workspace);
 
     // exit if no windows open
@@ -74,7 +75,7 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     let fixed = gtk::Fixed::new();
 
     for (idx, window) in windows.iter().enumerate() {
-        let (x, y) = calculate_geometry(window, &workspace, args.clone());
+        let (x, y) = calculate_geometry(window, &output, args.clone());
         let label = gtk::Label::new(Some(""));
         // TODO: make this work for workspaces with more than 26 windows
         label.set_markup(&format!("{}", ('a' as usize + idx % 26) as u8 as char));
