@@ -1,7 +1,14 @@
 [package]
 name = "sway-easyfocus"
+authors = ["Ethan Zhang <ethanz4@illinois.edu>"]
+description = "A tool to help efficiently focus windows in Sway inspired by i3-easyfocus."
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/edzdez/sway-easyfocus"
+readme = "README.md"
+keywords = ["cli", "sway"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
