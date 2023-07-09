@@ -2,7 +2,7 @@
 name = "sway-easyfocus"
 authors = ["Ethan Zhang <ethanz4@illinois.edu>"]
 description = "A tool to help efficiently focus windows in Sway inspired by i3-easyfocus."
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/edzdez/sway-easyfocus"
