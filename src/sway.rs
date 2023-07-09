@@ -1,4 +1,7 @@
-use std::{collections::VecDeque, sync::{Arc, Mutex}};
+use std::{
+    collections::VecDeque,
+    sync::{Arc, Mutex},
+};
 
 use swayipc::*;
 
@@ -8,7 +11,9 @@ pub fn acquire_connection() -> Connection {
 
 pub fn get_tree(conn: Arc<Mutex<Connection>>) -> Node {
     let mut conn_lock = conn.lock().unwrap();
-    conn_lock.get_tree().expect("failed to communicate with sway")
+    conn_lock
+        .get_tree()
+        .expect("failed to communicate with sway")
 }
 
 pub fn get_focused_workspace(conn: Arc<Mutex<Connection>>) -> Node {
@@ -32,7 +37,7 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
         let node = q.pop_back().unwrap();
 
         // if we have a window
-        if node.nodes.is_empty() {
+        if node.node_type == NodeType::Con && node.nodes.is_empty() {
             nodes.push(node.clone());
         }
 
@@ -48,6 +53,7 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
 pub fn focus(conn: Arc<Mutex<Connection>>, windows: &[Node], idx: usize) {
     let con_id = windows[idx].id;
     let mut conn_lock = conn.lock().unwrap();
-    conn_lock.run_command(format!("[con_id={}] focus", con_id))
+    conn_lock
+        .run_command(format!("[con_id={}] focus", con_id))
         .expect("failed to focus container");
 }
