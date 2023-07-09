@@ -3,20 +3,16 @@ use std::sync::{Arc, Mutex};
 use gtk::{prelude::*, Application, CssProvider, StyleContext};
 use swayipc::{Connection, Node};
 
-use crate::sway;
+use crate::{cli::Args, sway, utils};
 
-// TODO: make this not hardcoded (clap?)
-const PADDING_X: i32 = 4;
-const PADDING_Y: i32 = 2;
-
-fn calculate_geometry(window: &Node) -> (i32, i32) {
+fn calculate_geometry(window: &Node, args: Arc<Args>) -> (i32, i32) {
     // TODO: this doesn't work properly with stacked windows
     let rect = window.rect;
     let window_rect = window.window_rect;
     let deco_rect = window.deco_rect;
 
-    let x = rect.x + window_rect.x + deco_rect.x + PADDING_X;
-    let y = rect.y - (deco_rect.height - PADDING_Y);
+    let x = rect.x + window_rect.x + deco_rect.x + args.label_margin_x;
+    let y = rect.y - (deco_rect.height - args.label_margin_y);
 
     (x, y)
 }
@@ -35,7 +31,7 @@ fn handle_keypress(conn: Arc<Mutex<Connection>>, windows: &[Node], keyval: &str)
     }
 }
 
-fn build_ui(app: &Application, conn: Arc<Mutex<Connection>>) {
+fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     // get windows from sway
     let workspace = sway::get_focused_workspace(conn.clone());
     let windows = sway::get_all_windows(&workspace);
@@ -70,7 +66,7 @@ fn build_ui(app: &Application, conn: Arc<Mutex<Connection>>) {
     let fixed = gtk::Fixed::new();
 
     for (idx, window) in windows.iter().enumerate() {
-        let (x, y) = calculate_geometry(window);
+        let (x, y) = calculate_geometry(window, args.clone());
         let label = gtk::Label::new(Some(""));
         // TODO: make this work for workspaces with more than 26 windows
         label.set_markup(&format!("{}", ('a' as usize + idx % 26) as u8 as char));
@@ -82,11 +78,10 @@ fn build_ui(app: &Application, conn: Arc<Mutex<Connection>>) {
     window.show_all();
 }
 
-fn load_css() {
-    // TODO: make this customizable (perhaps clap?)
+fn load_css(args: Arc<Args>) {
     let provider = CssProvider::new();
     provider
-        .load_from_data(include_bytes!("style.css"))
+        .load_from_data(utils::args_to_css(&args).as_bytes())
         .expect("failed to load css");
 
     // Add the provider to the default screen
@@ -98,14 +93,15 @@ fn load_css() {
     );
 }
 
-pub fn run_ui(conn: Arc<Mutex<Connection>>) {
+pub fn run_ui(conn: Arc<Mutex<Connection>>, args: Arc<Args>) {
     let app = Application::builder()
         .application_id("com.github.edzdez.sway-easyfocus")
         .build();
 
-    app.connect_startup(|_| load_css());
+    let args_clone = args.clone();
+    app.connect_startup(move |_| load_css(args_clone.clone()));
     app.connect_activate(move |app| {
-        build_ui(app, conn.clone());
+        build_ui(app, args.clone(), conn.clone());
     });
 
     app.run();

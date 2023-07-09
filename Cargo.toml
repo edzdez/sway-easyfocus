@@ -11,3 +11,4 @@ gtk-layer-shell = { version = "0.6", features = ["v0_6"] }
 
 swayipc = "3.0"
 
+clap = { version = "4.3", features = ["derive"] }
