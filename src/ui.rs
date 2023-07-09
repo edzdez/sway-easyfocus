@@ -39,6 +39,11 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     let workspace = sway::get_focused_workspace(conn.clone());
     let windows = sway::get_all_windows(&workspace);
 
+    // exit if no windows open
+    if windows.len() == 0 {
+        return;
+    }
+
     let window = gtk::ApplicationWindow::new(app);
 
     // before the window is first realized, set it up to be a layer surface
