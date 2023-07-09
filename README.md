@@ -2,7 +2,7 @@
 
 A tool to help efficiently focus windows in Sway inspired by i3-easyfocus.
 
-[![demo video](./screenshots/demo.mp4)]
+https://github.com/edzdez/sway-easyfocus/assets/31393290/b71b1875-6c8b-4891-803c-763b040a55ff
 
 ## Usage
 
