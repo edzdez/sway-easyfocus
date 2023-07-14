@@ -27,10 +27,12 @@ impl FromStr for RGB {
 }
 
 pub fn args_to_css(args: &Args) -> String {
-    let window_bg = RGB::from_str(&args.window_background_color)
+    let window_bg = RGB::from_str(args.window_background_color.as_ref().unwrap())
         .expect("invalid color for window_background_color");
-    let label_bg = RGB::from_str(&args.label_background_color)
+    let label_bg = RGB::from_str(args.label_background_color.as_ref().unwrap())
         .expect("invalid color for label_background_color");
+    let label_fg = RGB::from_str(args.label_text_color.as_ref().unwrap())
+        .expect("invalid color for label_text_color");
 
     format!(
         r#"
@@ -40,6 +42,7 @@ pub fn args_to_css(args: &Args) -> String {
 
         window label {{
             background: rgba({}, {}, {}, {});
+            color: rgb({}, {}, {});
             font-family: {};
             font-weight: {};
             padding: {}px {}px;
@@ -48,14 +51,17 @@ pub fn args_to_css(args: &Args) -> String {
         window_bg.r,
         window_bg.g,
         window_bg.b,
-        args.window_background_opacity,
+        args.window_background_opacity.unwrap(),
         label_bg.r,
         label_bg.g,
         label_bg.b,
-        args.label_background_opacity,
-        args.font_family,
-        args.font_weight,
-        args.label_padding_y,
-        args.label_padding_x,
+        args.label_background_opacity.unwrap(),
+        label_fg.r,
+        label_fg.g,
+        label_fg.b,
+        args.font_family.as_ref().unwrap(),
+        args.font_weight.as_ref().unwrap(),
+        args.label_padding_y.unwrap(),
+        args.label_padding_x.unwrap(),
     )
 }

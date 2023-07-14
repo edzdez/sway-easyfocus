@@ -14,8 +14,8 @@ fn calculate_geometry(window: &Node, output: &Node, args: Arc<Args>) -> (i32, i3
     let anchor_x = output.rect.x;
     let anchor_y = output.rect.y;
 
-    let rel_x = rect.x + window_rect.x + deco_rect.x + args.label_margin_x;
-    let rel_y = rect.y - (deco_rect.height - args.label_margin_y);
+    let rel_x = rect.x + window_rect.x + deco_rect.x + args.label_margin_x.unwrap();
+    let rel_y = rect.y - (deco_rect.height - args.label_margin_y.unwrap());
 
     (rel_x - anchor_x, rel_y - anchor_y)
 }
