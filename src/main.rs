@@ -11,6 +11,7 @@ mod utils;
 
 fn main() {
     let args = Arc::new(Args::parse());
+    dbg!(&args);
 
     let conn = Arc::new(Mutex::new(sway::acquire_connection()));
     ui::run_ui(conn, args);

@@ -113,5 +113,6 @@ pub fn run_ui(conn: Arc<Mutex<Connection>>, args: Arc<Args>) {
         build_ui(app, args.clone(), conn.clone());
     });
 
-    app.run();
+    let empty: Vec<String> = vec![];
+    app.run_with_args(&empty);
 }
