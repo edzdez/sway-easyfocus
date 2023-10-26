@@ -48,6 +48,10 @@ pub fn args_to_css(args: &Args) -> String {
             font-size: {};
             padding: {}px {}px;
         }}
+
+        .focused {{
+            background: red;
+        }}
         "#,
         window_bg.r,
         window_bg.g,
