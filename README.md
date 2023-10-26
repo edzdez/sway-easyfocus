@@ -19,6 +19,10 @@ label_background_color: 1d1f21
 label_background_opacity: 1.0
 label_text_color: c5c8c6
 
+focused_background_color: 1d1f21
+focused_background_opacity: 1.0
+focused_text_color: c5c8c6
+
 font_family: monospace
 font_weight: bold
 font_size: medium
@@ -47,20 +51,26 @@ Options:
           set the label background opacity <0-1.0>
       --label-text-color <LABEL_TEXT_COLOR>
           set the label text color <rrggbb>
+      --focused-background-color <FOCUSED_BACKGROUND_COLOR>
+          set the label background color <rrggbb>
+      --focused-background-opacity <FOCUSED_BACKGROUND_OPACITY>
+          set the focused background opacity <0-1.0>
+      --focused-text-color <FOCUSED_TEXT_COLOR>
+          set the focused text color <rrggbb>
       --font-family <FONT_FAMILY>
-
+          set the font family
       --font-weight <FONT_WEIGHT>
-
+          set the font weight
       --font-size <FONT_SIZE>
-
+          set the font size, see: https://www.w3.org/TR/css-fonts-3/#font-size-prop
       --label-padding-x <LABEL_PADDING_X>
-
+          set the label padding-x <px>
       --label-padding-y <LABEL_PADDING_Y>
-
+          set the label padding-y <px>
       --label-margin-x <LABEL_MARGIN_X>
-
+          set the label margin-x <px>
       --label-margin-y <LABEL_MARGIN_Y>
-
+          set the label margin-y <px>
   -h, --help
           Print help
   -V, --version
