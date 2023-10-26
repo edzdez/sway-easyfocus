@@ -81,7 +81,7 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         label.set_markup(&format!("{}", ('a' as usize + idx % 26) as u8 as char));
         fixed.put(&label, x, y);
 
-        // Apply a CSS class to the focused window so it can be stylced differently
+        // Apply a CSS class to the focused window so it can be styled differently
         if window.focused {
             label.style_context().add_class("focused");
         }
