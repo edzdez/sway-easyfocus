@@ -26,31 +26,31 @@ pub struct Args {
     #[arg(long)]
     pub label_text_color: Option<String>,
 
-    // set the font family
+    /// set the font family
     #[arg(long)]
     pub font_family: Option<String>,
 
-    // set the font weight
+    /// set the font weight
     #[arg(long)]
     pub font_weight: Option<String>,
 
-    // set the font size
+    /// set the font size, see: https://www.w3.org/TR/css-fonts-3/#font-size-prop
     #[arg(long)]
     pub font_size: Option<String>,
 
-    // set the label padding-x <px>
+    /// set the label padding-x <px>
     #[arg(long)]
     pub label_padding_x: Option<i32>,
 
-    // set the label padding-y <px>
+    /// set the label padding-y <px>
     #[arg(long)]
     pub label_padding_y: Option<i32>,
 
-    // set the label margin-x <px>
+    /// set the label margin-x <px>
     #[arg(long)]
     pub label_margin_x: Option<i32>,
 
-    // set the label margin-y <px>
+    /// set the label margin-y <px>
     #[arg(long)]
     pub label_margin_y: Option<i32>,
 }
