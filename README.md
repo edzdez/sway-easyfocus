@@ -21,6 +21,7 @@ label_text_color: c5c8c6
 
 font_family: monospace
 font_weight: bold
+font_size: medium
 
 label_padding_x: 4
 label_padding_y: 0
@@ -49,6 +50,8 @@ Options:
       --font-family <FONT_FAMILY>
 
       --font-weight <FONT_WEIGHT>
+
+      --font-size <FONT_SIZE>
 
       --label-padding-x <LABEL_PADDING_X>
 

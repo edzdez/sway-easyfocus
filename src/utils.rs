@@ -45,6 +45,7 @@ pub fn args_to_css(args: &Args) -> String {
             color: rgb({}, {}, {});
             font-family: {};
             font-weight: {};
+            font-size: {};
             padding: {}px {}px;
         }}
         "#,
@@ -61,6 +62,7 @@ pub fn args_to_css(args: &Args) -> String {
         label_fg.b,
         args.font_family.as_ref().unwrap(),
         args.font_weight.as_ref().unwrap(),
+        args.font_size.as_ref().unwrap(),
         args.label_padding_y.unwrap(),
         args.label_padding_x.unwrap(),
     )
