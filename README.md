@@ -12,16 +12,16 @@ If a key is not found in the config file nor provided as a cli option, then it u
 An example config is with the default options is shown below:
 
 ```yaml
-window_background_color: 1d1f21
+window_background_color: '1d1f21'
 window_background_opacity: 0.2
 
-label_background_color: 1d1f21
+label_background_color: '1d1f21'
 label_background_opacity: 1.0
-label_text_color: c5c8c6
+label_text_color: 'c5c8c6'
 
-focused_background_color: 1d1f21
+focused_background_color: '285577'
 focused_background_opacity: 1.0
-focused_text_color: c5c8c6
+focused_text_color: 'ffffff'
 
 font_family: monospace
 font_weight: bold
