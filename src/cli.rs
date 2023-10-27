@@ -26,6 +26,18 @@ pub struct Args {
     #[arg(long)]
     pub label_text_color: Option<String>,
 
+    /// set the label background color <rrggbb>
+    #[arg(long)]
+    pub focused_background_color: Option<String>,
+
+    /// set the focused background opacity <0-1.0>
+    #[arg(long)]
+    pub focused_background_opacity: Option<f64>,
+
+    /// set the focused text color <rrggbb>
+    #[arg(long)]
+    pub focused_text_color: Option<String>,
+
     /// set the font family
     #[arg(long)]
     pub font_family: Option<String>,
@@ -73,6 +85,15 @@ impl Args {
         if other.label_text_color.is_some() {
             self.label_text_color = other.label_text_color.clone();
         }
+        if other.focused_background_color.is_some() {
+            self.focused_background_color = other.focused_background_color.clone();
+        }
+        if other.focused_background_opacity.is_some() {
+            self.focused_background_opacity = other.focused_background_opacity;
+        }
+        if other.focused_text_color.is_some() {
+            self.focused_text_color = other.focused_text_color.clone();
+        }
         if other.font_family.is_some() {
             self.font_family = other.font_family.clone();
         }
@@ -105,6 +126,9 @@ impl Default for Args {
             label_background_color: Some("1d1f21".to_string()),
             label_background_opacity: Some(1.0),
             label_text_color: Some("c5c8c6".to_string()),
+            focused_background_color: Some("285577".to_string()),
+            focused_background_opacity: Some(1.0),
+            focused_text_color: Some("ffffff".to_string()),
             font_family: Some("monospace".to_string()),
             font_weight: Some("bold".to_string()),
             font_size: Some("medium".to_string()),

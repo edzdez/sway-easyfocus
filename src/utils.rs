@@ -29,10 +29,16 @@ impl FromStr for RGB {
 pub fn args_to_css(args: &Args) -> String {
     let window_bg = RGB::from_str(args.window_background_color.as_ref().unwrap())
         .expect("invalid color for window_background_color");
+
     let label_bg = RGB::from_str(args.label_background_color.as_ref().unwrap())
         .expect("invalid color for label_background_color");
     let label_fg = RGB::from_str(args.label_text_color.as_ref().unwrap())
         .expect("invalid color for label_text_color");
+
+    let focused_bg = RGB::from_str(args.focused_background_color.as_ref().unwrap())
+        .expect("invalid color for focused_background_color");
+    let focused_fg = RGB::from_str(args.focused_text_color.as_ref().unwrap())
+        .expect("invalid color for focused_text_color");
 
     format!(
         r#"
@@ -47,6 +53,11 @@ pub fn args_to_css(args: &Args) -> String {
             font-weight: {};
             font-size: {};
             padding: {}px {}px;
+        }}
+
+        .focused {{
+            background: rgba({}, {}, {}, {});
+            color: rgb({}, {}, {})
         }}
         "#,
         window_bg.r,
@@ -65,5 +76,12 @@ pub fn args_to_css(args: &Args) -> String {
         args.font_size.as_ref().unwrap(),
         args.label_padding_y.unwrap(),
         args.label_padding_x.unwrap(),
+        focused_bg.r,
+        focused_bg.g,
+        focused_bg.b,
+        args.focused_background_opacity.unwrap(),
+        focused_fg.r,
+        focused_fg.g,
+        focused_fg.b,
     )
 }
