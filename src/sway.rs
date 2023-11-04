@@ -63,8 +63,7 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
     nodes
 }
 
-pub fn focus(conn: Arc<Mutex<Connection>>, windows: &[Node], idx: usize) {
-    let con_id = windows[idx].id;
+pub fn focus(conn: Arc<Mutex<Connection>>, con_id: i64) {
     let mut conn_lock = conn.lock().unwrap();
     conn_lock
         .run_command(format!("[con_id={}] focus", con_id))
