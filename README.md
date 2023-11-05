@@ -12,6 +12,8 @@ If a key is not found in the config file nor provided as a cli option, then it u
 An example config is with the default options is shown below:
 
 ```yaml
+chars: 'fjghdkslaemuvitywoqpcbnxz'
+
 window_background_color: '1d1f21'
 window_background_opacity: 0.2
 
@@ -41,6 +43,8 @@ A tool to help efficiently focus windows in Sway inspired by i3-easyfocus.
 Usage: sway-easyfocus [OPTIONS]
 
 Options:
+      --chars <CHARS>
+          list of chars to use for hints <fjghdkslaemuvitywoqpcbnxz>
       --window-background-color <WINDOW_BACKGROUND_COLOR>
           set the window background color <rrggbb>
       --window-background-opacity <WINDOW_BACKGROUND_OPACITY>

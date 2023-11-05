@@ -6,6 +6,10 @@ use serde::Deserialize;
 #[derive(Parser, Deserialize, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// list of chars to use for hints <fjghdkslaemuvitywoqpcbnxz>
+    #[arg(long)]
+    pub chars: Option<String>,
+
     /// set the window background color <rrggbb>
     #[arg(long)]
     pub window_background_color: Option<String>,
@@ -121,6 +125,7 @@ impl Args {
 impl Default for Args {
     fn default() -> Self {
         Self {
+            chars: Some("fjghdkslaemuvitywoqpcbnxz".to_string()),
             window_background_color: Some("1d1f21".to_string()),
             window_background_opacity: Some(0.2),
             label_background_color: Some("1d1f21".to_string()),

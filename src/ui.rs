@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use gtk::{prelude::*, Application, CssProvider, StyleContext};
@@ -20,16 +21,13 @@ fn calculate_geometry(window: &Node, output: &Node, args: Arc<Args>) -> (i32, i3
     (rel_x - anchor_x, rel_y - anchor_y)
 }
 
-fn handle_keypress(conn: Arc<Mutex<Connection>>, windows: &[Node], keyval: &str) {
+fn handle_keypress(conn: Arc<Mutex<Connection>>, key_to_con_id: &HashMap<char, i64>, keyval: &str) {
     if keyval.len() == 1 {
         // we can unwrap because the keyval has one character
         let c = keyval.chars().next().unwrap();
         if c.is_alphabetic() && c.is_lowercase() {
-            // this is kinda hacky
-            let c_index = c as usize - 'a' as usize;
-            if c_index < windows.len() {
-                sway::focus(conn, windows, c_index);
-            }
+            let con_id = key_to_con_id[&c];
+            sway::focus(conn, con_id);
         }
     }
 }
@@ -39,6 +37,9 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     let output = sway::get_focused_output(conn.clone());
     let workspace = sway::get_focused_workspace(&output);
     let windows = sway::get_all_windows(&workspace);
+
+    let letters = args.chars.clone().expect("Some characters are required");
+    let mut chars = letters.chars();
 
     // exit if no windows open
     if windows.len() == 0 {
@@ -55,17 +56,6 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     // receive keyboard events from the compositor
     gtk_layer_shell::set_keyboard_mode(&window, gtk_layer_shell::KeyboardMode::Exclusive);
 
-    let windows_clone = windows.clone();
-    window.connect_key_press_event(move |window, event| {
-        let keyval = event
-            .keyval()
-            .name()
-            .expect("the key pressed does not have a name?");
-        handle_keypress(conn.clone(), &windows_clone, &keyval);
-        window.close();
-        Inhibit(false)
-    });
-
     // take up the full screen
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);
@@ -73,12 +63,15 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, true);
 
     let fixed = gtk::Fixed::new();
+    // map keys to window Ids
+    let mut key_to_con_id = HashMap::new();
 
-    for (idx, window) in windows.iter().enumerate() {
+    for (_idx, window) in windows.iter().enumerate() {
         let (x, y) = calculate_geometry(window, &output, args.clone());
         let label = gtk::Label::new(Some(""));
-        // TODO: make this work for workspaces with more than 26 windows
-        label.set_markup(&format!("{}", ('a' as usize + idx % 26) as u8 as char));
+        let letter = chars.next().unwrap();
+        key_to_con_id.insert(letter, window.id);
+        label.set_markup(&format!("{}", letter));
         fixed.put(&label, x, y);
 
         // Apply a CSS class to the focused window so it can be styled differently
@@ -87,8 +80,17 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         }
     }
 
-    window.add(&fixed);
+    window.connect_key_press_event(move |window, event| {
+        let keyval = event
+            .keyval()
+            .name()
+            .expect("the key pressed does not have a name?");
+        handle_keypress(conn.clone(), &key_to_con_id, &keyval);
+        window.close();
+        Inhibit(false)
+    });
 
+    window.add(&fixed);
     window.show_all();
 }
 
