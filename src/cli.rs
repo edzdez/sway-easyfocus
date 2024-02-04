@@ -74,6 +74,9 @@ pub struct Args {
 impl Args {
     // ugh
     pub fn merge(&mut self, other: &Self) {
+        if other.chars.is_some() {
+            self.chars = other.chars.clone();
+        }
         if other.window_background_color.is_some() {
             self.window_background_color = other.window_background_color.clone();
         }
