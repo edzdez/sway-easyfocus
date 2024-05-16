@@ -28,7 +28,7 @@ fn parse_config() -> Arc<Args> {
         .extract::<Args>()
     {
         args.merge(&config_args);
-        dbg!(&config_args);
+        // dbg!(&config_args);
     }
 
     let cli_args = Args::parse();

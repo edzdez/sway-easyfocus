@@ -48,7 +48,13 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
 
         // tiled/tabbed/stacked nodes
         for child in node.nodes {
-            q.push_back(child.clone());
+            let mut c = child.clone();
+            // a bit of a hack to keep track of stacked/tabbed layouts:
+            // if we're a container, we change our children's layout to ours
+            if node.node_type == NodeType::Con {
+                c.layout = node.layout;
+            }
+            q.push_back(c);
         }
 
         /*
@@ -60,6 +66,7 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
     }
 
     nodes.reverse();
+    // dbg!(&nodes);
     nodes
 }
 
