@@ -47,12 +47,16 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
         }
 
         // tiled/tabbed/stacked nodes
-        for child in node.nodes {
+        for child in &node.nodes {
             let mut c = child.clone();
             // a bit of a hack to keep track of stacked/tabbed layouts:
-            // if we're a container, we change our children's layout to ours
-            if node.node_type == NodeType::Con {
+            // if we're stacked, we set our childrens' layouts to stacked and change the decorator
+            // height.
+            if node.node_type == NodeType::Con && node.layout == NodeLayout::Stacked {
                 c.layout = node.layout;
+                // change the decoration height to be the *total height* of all the decorations in
+                // the stacked container.
+                c.deco_rect.height *= node.nodes.len() as i32;
             }
             q.push_back(c);
         }

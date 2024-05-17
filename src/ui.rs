@@ -7,7 +7,7 @@ use swayipc::{Connection, Node, NodeLayout};
 use crate::{cli::Args, sway, utils};
 
 fn calculate_geometry(window: &Node, output: &Node, args: Arc<Args>) -> (i32, i32) {
-    // TODO: this doesn't work properly with stacked windows
+    // dbg!(&window);
     let rect = window.rect;
     let window_rect = window.window_rect;
     let deco_rect = window.deco_rect;
@@ -16,10 +16,9 @@ fn calculate_geometry(window: &Node, output: &Node, args: Arc<Args>) -> (i32, i3
     let anchor_y = output.rect.y;
 
     let rel_x = rect.x + window_rect.x + deco_rect.x + args.label_margin_x.unwrap();
-    let rel_y = rect.y
-        - (deco_rect.height - args.label_margin_y.unwrap())
-        - if window.layout == NodeLayout::Stacked {
-            deco_rect.height - deco_rect.y
+    let rel_y = rect.y - (deco_rect.height - args.label_margin_y.unwrap())
+        + if window.layout == NodeLayout::Stacked {
+            deco_rect.y
         } else {
             0
         };
