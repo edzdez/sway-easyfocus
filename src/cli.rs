@@ -1,6 +1,26 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 use serde::Deserialize;
+
+/// What to do with the selected container.
+#[derive(Subcommand, Deserialize, Debug, Clone, Copy)]
+pub enum Command {
+    /// Focus the container
+    #[command(about = "Focus the selected window (default)")]
+    Focus,
+
+    /// Swap current window with selected window
+    #[command(about = "Swap focused window with the selected window")]
+    Swap {
+        /// Also focus the selected window after swapping
+        #[arg(long)]
+        focus: bool,
+    },
+
+    /// Print the container's ID
+    #[command(about = "Print the selected window's ID")]
+    Print,
+}
 
 /// A tool to help efficiently focus windows in Sway inspired by i3-easyfocus.
 #[derive(Parser, Deserialize, Debug, Clone)]
@@ -69,6 +89,11 @@ pub struct Args {
     /// set the label margin-y <px>
     #[arg(long)]
     pub label_margin_y: Option<i32>,
+
+    /// The selected command
+    #[command(subcommand)]
+    #[serde(skip)]
+    pub command: Option<Command>,
 }
 
 impl Args {
@@ -122,6 +147,9 @@ impl Args {
         if other.label_margin_y.is_some() {
             self.label_margin_y = other.label_margin_y;
         }
+        if other.command.is_some() {
+            self.command = other.command;
+        }
     }
 }
 
@@ -144,6 +172,7 @@ impl Default for Args {
             label_padding_y: Some(0),
             label_margin_x: Some(4),
             label_margin_y: Some(2),
+            command: Some(Command::Focus),
         }
     }
 }

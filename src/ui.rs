@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use gtk::{prelude::*, Application, CssProvider, StyleContext};
 use swayipc::{Connection, Node, NodeLayout};
 
-use crate::{cli::Args, sway, utils};
+use crate::{cli::Args, cli::Command, sway, utils};
 
 fn calculate_geometry(window: &Node, output: &Node, args: Arc<Args>) -> (i32, i32) {
     // dbg!(&window);
@@ -26,13 +26,33 @@ fn calculate_geometry(window: &Node, output: &Node, args: Arc<Args>) -> (i32, i3
     (rel_x - anchor_x, rel_y - anchor_y)
 }
 
-fn handle_keypress(conn: Arc<Mutex<Connection>>, key_to_con_id: &HashMap<char, i64>, keyval: &str) {
+fn handle_keypress(
+    conn: Arc<Mutex<Connection>>,
+    key_to_con_id: &HashMap<char, i64>,
+    keyval: &str,
+    command: &Command,
+) {
     if keyval.len() == 1 {
         // we can unwrap because the keyval has one character
         let c = keyval.chars().next().unwrap();
         if c.is_alphabetic() && c.is_lowercase() {
             let con_id = key_to_con_id[&c];
-            sway::focus(conn, con_id);
+
+            match &command {
+                Command::Focus => {
+                    sway::focus(conn, con_id);
+                }
+                Command::Swap { focus } => {
+                    sway::swap(conn.clone(), con_id);
+
+                    if *focus {
+                        sway::focus(conn, con_id);
+                    }
+                }
+                Command::Print => {
+                    println!("{}", con_id);
+                }
+            }
         }
     }
 }
@@ -90,7 +110,12 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
             .keyval()
             .name()
             .expect("the key pressed does not have a name?");
-        handle_keypress(conn.clone(), &key_to_con_id, &keyval);
+        handle_keypress(
+            conn.clone(),
+            &key_to_con_id,
+            &keyval,
+            &args.command.unwrap_or(Command::Focus),
+        );
         window.close();
         Inhibit(false)
     });

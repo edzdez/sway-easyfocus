@@ -80,3 +80,10 @@ pub fn focus(conn: Arc<Mutex<Connection>>, con_id: i64) {
         .run_command(format!("[con_id={}] focus", con_id))
         .expect("failed to focus container");
 }
+
+pub fn swap(conn: Arc<Mutex<Connection>>, con_id: i64) {
+    let mut conn_lock = conn.lock().unwrap();
+    conn_lock
+        .run_command(format!("swap container with con_id {}", con_id))
+        .expect("failed to swap container");
+}
