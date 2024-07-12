@@ -40,7 +40,13 @@ label_margin_y: 2
 ```
 A tool to help efficiently focus windows in Sway inspired by i3-easyfocus.
 
-Usage: sway-easyfocus [OPTIONS]
+Usage: sway-easyfocus [OPTIONS] [COMMAND]
+
+Commands:
+  focus  Focus the selected window (default)
+  swap   Swap focused window with the selected window
+  print  Print the selected window's ID
+  help   Print this message or the help of the given subcommand(s)
 
 Options:
       --chars <CHARS>
@@ -80,6 +86,11 @@ Options:
   -V, --version
           Print version
 ```
+
+The default action is to focus the selected window.  The `swap`
+command can be used to swap the focused window with the selected
+window, and the `print` command can be used to print the selected
+window ID (sway container ID).
 
 ## Build
 
