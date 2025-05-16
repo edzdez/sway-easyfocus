@@ -59,6 +59,14 @@ pub fn args_to_css(args: &Args) -> String {
             background: rgba({}, {}, {}, {});
             color: rgb({}, {}, {})
         }}
+
+        .selected {{
+            background: rgb({}, {}, {});
+            color: rgb({}, {}, {});
+            border: 2px solid white;
+            font-size: larger;
+            padding: {}px {}px;
+        }}
         "#,
         window_bg.r,
         window_bg.g,
@@ -83,5 +91,14 @@ pub fn args_to_css(args: &Args) -> String {
         focused_fg.r,
         focused_fg.g,
         focused_fg.b,
+        // For selected style, use the inverse of the focused colors for stronger contrast
+        focused_fg.r,
+        focused_fg.g,
+        focused_fg.b,
+        focused_bg.r,
+        focused_bg.g,
+        focused_bg.b,
+        args.label_padding_y.unwrap() + 2,  // Slightly larger padding
+        args.label_padding_x.unwrap() + 4   // Slightly larger padding
     )
 }

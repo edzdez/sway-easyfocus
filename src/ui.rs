@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
-use gtk::{prelude::*, Application, CssProvider, StyleContext};
+use gtk::{prelude::*, Application, CssProvider, StyleContext, glib};
 use swayipc::{Connection, Node, NodeLayout};
 
 use crate::{cli::Args, cli::Command, sway, utils};
@@ -31,30 +32,34 @@ fn handle_keypress(
     key_to_con_id: &HashMap<char, i64>,
     keyval: &str,
     command: &Command,
-) {
+) -> bool {
     if keyval.len() == 1 {
         // we can unwrap because the keyval has one character
         let c = keyval.chars().next().unwrap();
         if c.is_alphabetic() && c.is_lowercase() {
-            let con_id = key_to_con_id[&c];
-
-            match &command {
-                Command::Focus => {
-                    sway::focus(conn, con_id);
-                }
-                Command::Swap { focus } => {
-                    sway::swap(conn.clone(), con_id);
-
-                    if *focus {
-                        sway::focus(conn, con_id);
+            if let Some(con_id) = key_to_con_id.get(&c) {
+                match &command {
+                    Command::Focus => {
+                        sway::focus(conn, *con_id);
+                        return true;
                     }
-                }
-                Command::Print => {
-                    println!("{}", con_id);
+                    Command::Swap { focus } => {
+                        sway::swap(conn.clone(), *con_id);
+
+                        if *focus {
+                            sway::focus(conn, *con_id);
+                        }
+                        return true;
+                    }
+                    Command::Print => {
+                        println!("{}", con_id);
+                        return true;
+                    }
                 }
             }
         }
     }
+    false
 }
 
 fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
@@ -105,19 +110,56 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         }
     }
 
+    let key_to_con_id_clone = key_to_con_id.clone();
+    let args_clone = args.clone();
+    
     window.connect_key_press_event(move |window, event| {
         let keyval = event
             .keyval()
             .name()
             .expect("the key pressed does not have a name?");
-        handle_keypress(
+            
+        let window_focused = handle_keypress(
             conn.clone(),
-            &key_to_con_id,
+            &key_to_con_id_clone,
             &keyval,
-            &args.command.unwrap_or(Command::Focus),
+            &args_clone.command.unwrap_or(Command::Focus),
         );
-        window.close();
-        Inhibit(false)
+        
+        if window_focused {
+            // Keep window open for 500ms to show visual confirmation
+            let window_clone = window.clone();
+            glib::timeout_add_local(Duration::from_millis(500), move || {
+                window_clone.close();
+                glib::Continue(false)
+            });
+
+            // Find the window label that was selected and highlight it
+            if let Some(fixed) = window.child().and_then(|c| c.downcast::<gtk::Fixed>().ok()) {
+                let c = keyval.chars().next().unwrap();
+                
+                for child in fixed.children() {
+                    // Remove any existing styling
+                    child.style_context().remove_class("focused");
+                    
+                    // This assumes labels were added in the same order as windows
+                    if let Some(label) = child.downcast_ref::<gtk::Label>() {
+                        let label_text = label.text();
+                        let label_char = label_text.chars().next().unwrap();
+                        
+                        if label_char == c {
+                            // Apply special highlight class to the selected window
+                            child.style_context().add_class("selected");
+                        }
+                    }
+                }
+            }
+            
+            Inhibit(true) // Prevent default handler from closing window
+        } else {
+            window.close();
+            Inhibit(false)
+        }
     });
 
     window.add(&fixed);
