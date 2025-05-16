@@ -57,7 +57,7 @@ pub fn args_to_css(args: &Args) -> String {
 
         .focused {{
             background: rgba({}, {}, {}, {});
-            color: rgb({}, {}, {})
+            color: rgb({}, {}, {});
         }}
 
         .selected {{
