@@ -86,12 +86,10 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
             q.push_back(c);
         }
 
-        /*
         // floating nodes
         for child in node.floating_nodes {
             q.push_back(child.clone());
         }
-        */
     }
 
     nodes.reverse();
