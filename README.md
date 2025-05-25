@@ -33,6 +33,8 @@ label_padding_x: 4
 label_padding_y: 0
 label_margin_x: 4
 label_margin_y: 2
+
+show_confirmation: true
 ```
 
 ## Usage
@@ -81,6 +83,8 @@ Options:
           set the label margin-x <px>
       --label-margin-y <LABEL_MARGIN_Y>
           set the label margin-y <px>
+      --show-confirmation <SHOW_CONFIRMATION>
+          Show confirmation window after selection [possible values: true, false]
   -h, --help
           Print help
   -V, --version

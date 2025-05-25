@@ -214,6 +214,7 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
 
             if window_focused {
                 let c = keyval.chars().next().unwrap();
+                let show_confirmation = args_clone.show_confirmation.unwrap_or(true);
 
                 if is_multi_monitor {
                     // Hide all windows immediately
@@ -221,16 +222,19 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                         w.hide();
                     }
 
-                    // Create confirmation window
-                    if let Some(con_id) = key_map.borrow().get(&c) {
-                        if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
-                            create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                    // Create confirmation window if enabled
+                    if show_confirmation {
+                        if let Some(con_id) = key_map.borrow().get(&c) {
+                            if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
+                                create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                            }
                         }
                     }
 
-                    // Close all windows after delay
+                    // Close all windows after delay (or immediately if no confirmation)
                     let windows_to_close = all_windows_clone.borrow().clone();
-                    glib::timeout_add_local(Duration::from_millis(500), move || {
+                    let delay = if show_confirmation { 500 } else { 0 };
+                    glib::timeout_add_local(Duration::from_millis(delay), move || {
                         for w in windows_to_close.iter() {
                             w.close();
                         }
@@ -238,13 +242,16 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                     });
                 } else {
                     // Single monitor mode: create confirmation and close current window
-                    if let Some(con_id) = key_map.borrow().get(&c) {
-                        if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
-                            create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                    if show_confirmation {
+                        if let Some(con_id) = key_map.borrow().get(&c) {
+                            if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
+                                create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                            }
                         }
                     }
 
-                    glib::timeout_add_local(Duration::from_millis(500), {
+                    let delay = if show_confirmation { 500 } else { 0 };
+                    glib::timeout_add_local(Duration::from_millis(delay), {
                         let window = current_window.clone();
                         move || {
                             window.close();

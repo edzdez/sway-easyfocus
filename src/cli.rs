@@ -90,6 +90,10 @@ pub struct Args {
     #[arg(long)]
     pub label_margin_y: Option<i32>,
 
+    /// Show confirmation window after selection
+    #[arg(long)]
+    pub show_confirmation: Option<bool>,
+
     /// The selected command
     #[command(subcommand)]
     #[serde(skip)]
@@ -150,6 +154,11 @@ impl Args {
         if other.command.is_some() {
             self.command = other.command;
         }
+
+        // Handle confirmation flag
+        if other.show_confirmation.is_some() {
+            self.show_confirmation = other.show_confirmation;
+        }
     }
 }
 
@@ -172,6 +181,7 @@ impl Default for Args {
             label_padding_y: Some(0),
             label_margin_x: Some(4),
             label_margin_y: Some(2),
+            show_confirmation: Some(true),
             command: Some(Command::Focus),
         }
     }
