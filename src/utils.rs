@@ -1,5 +1,4 @@
 use std::str::FromStr;
-
 use crate::cli::Args;
 
 // stolen from https://rust-lang-nursery.github.io/rust-cookbook/text/string_parsing.html
@@ -61,10 +60,12 @@ pub fn args_to_css(args: &Args) -> String {
         }}
 
         .selected {{
-            background: rgb({}, {}, {});
+            background: rgba({}, {}, {}, {});
             color: rgb({}, {}, {});
             border: 2px solid white;
-            font-size: larger;
+            font-family: {};
+            font-weight: {};
+            font-size: {};
             padding: {}px {}px;
         }}
         "#,
@@ -91,14 +92,18 @@ pub fn args_to_css(args: &Args) -> String {
         focused_fg.r,
         focused_fg.g,
         focused_fg.b,
-        // For selected style, use the inverse of the focused colors for stronger contrast
-        focused_fg.r,
-        focused_fg.g,
-        focused_fg.b,
+        // Use the same colors and styling as focused for confirmation/selected windows
         focused_bg.r,
         focused_bg.g,
         focused_bg.b,
-        args.label_padding_y.unwrap() + 2,  // Slightly larger padding
-        args.label_padding_x.unwrap() + 4   // Slightly larger padding
+        args.focused_background_opacity.unwrap(),
+        focused_fg.r,
+        focused_fg.g,
+        focused_fg.b,
+        args.font_family.as_ref().unwrap(),
+        args.font_weight.as_ref().unwrap(),
+        args.font_size.as_ref().unwrap(),
+        args.label_padding_y.unwrap() + 2,  // Slightly larger padding for confirmation
+        args.label_padding_x.unwrap() + 4   // Slightly larger padding for confirmation
     )
 }
