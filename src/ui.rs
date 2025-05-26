@@ -4,8 +4,9 @@ use std::time::Duration;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gtk::{prelude::*, Application, CssProvider, StyleContext, glib};
-use gtk_layer_shell;
+use gtk4::{prelude::*, Application, CssProvider, glib};
+use gtk4::glib::ControlFlow;
+use gtk4_layer_shell as gtk_layer_shell;
 use swayipc::{Connection, Node, NodeLayout};
 
 use crate::{cli::Args, cli::Command, sway, utils};
@@ -72,38 +73,48 @@ fn create_confirmation_window(
     output: &Node,
     selected_char: char,
 ) {
-    let confirm_window = gtk::ApplicationWindow::new(app);
+    let confirm_window = gtk4::ApplicationWindow::new(app);
 
     // Configure as layer shell
-    gtk_layer_shell::init_for_window(&confirm_window);
-    gtk_layer_shell::set_layer(&confirm_window, gtk_layer_shell::Layer::Overlay);
-    gtk_layer_shell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Top, true);
-    gtk_layer_shell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Bottom, true);
-    gtk_layer_shell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Left, true);
-    gtk_layer_shell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Right, true);
+    gtk_layer_shell::LayerShell::init_layer_shell(&confirm_window);
+    gtk_layer_shell::LayerShell::set_layer(&confirm_window, gtk_layer_shell::Layer::Overlay);
+    gtk_layer_shell::LayerShell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Top, true);
+    gtk_layer_shell::LayerShell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Bottom, true);
+    gtk_layer_shell::LayerShell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Left, true);
+    gtk_layer_shell::LayerShell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Right, true);
 
     // Set on correct monitor
-    let display = gtk::gdk::Display::default().unwrap();
-    let center_x = output.rect.x + (output.rect.width / 2);
-    let center_y = output.rect.y + (output.rect.height / 2);
-    if let Some(monitor) = display.monitor_at_point(center_x, center_y) {
-        gtk_layer_shell::set_monitor(&confirm_window, &monitor);
+    let display = gtk4::gdk::Display::default().unwrap();
+    let monitors = display.monitors();
+    for i in 0..monitors.n_items() {
+        if let Some(monitor) = monitors.item(i).and_then(|obj| obj.downcast::<gtk4::gdk::Monitor>().ok()) {
+            let geometry = monitor.geometry();
+            if geometry.x() <= output.rect.x && 
+               output.rect.x < geometry.x() + geometry.width() &&
+               geometry.y() <= output.rect.y &&
+               output.rect.y < geometry.y() + geometry.height() {
+                gtk_layer_shell::LayerShell::set_monitor(&confirm_window, &monitor);
+                break;
+            }
+        }
     }
+
+    // Create a fixed container for positioning
+    let fixed = gtk4::Fixed::new();
 
     // Add label at correct position
     let (x, y) = calculate_geometry(window_node, output, args);
-    let fixed = gtk::Fixed::new();
-    let label = gtk::Label::new(Some(&selected_char.to_string()));
-    label.style_context().add_class("selected");
-    fixed.put(&label, x, y);
+    let label = gtk4::Label::new(Some(&selected_char.to_string()));
+    label.add_css_class("selected");
+    fixed.put(&label, x as f64, y as f64);
 
-    confirm_window.add(&fixed);
-    confirm_window.show_all();
+    confirm_window.set_child(Some(&fixed));
+    confirm_window.present();
 
     // Set timeout to close
     glib::timeout_add_local(Duration::from_millis(500), move || {
         confirm_window.close();
-        glib::Continue(false)
+        ControlFlow::Break
     });
 }
 
@@ -121,7 +132,7 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
 
     // Shared state for multi-monitor mode
     let all_key_to_con_id: Rc<RefCell<HashMap<char, i64>>> = Rc::new(RefCell::new(HashMap::new()));
-    let all_windows: Rc<RefCell<Vec<gtk::ApplicationWindow>>> = Rc::new(RefCell::new(Vec::new()));
+    let all_windows: Rc<RefCell<Vec<gtk4::ApplicationWindow>>> = Rc::new(RefCell::new(Vec::new()));
     let mut all_windows_map: HashMap<i64, (Node, Node, char)> = HashMap::new();
 
     // Get global character sequence
@@ -139,34 +150,42 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         }
 
         // Create GTK window for this output
-        let window = gtk::ApplicationWindow::new(app);
+        let window = gtk4::ApplicationWindow::new(app);
 
         // Configure layer shell
-        gtk_layer_shell::init_for_window(&window);
-        gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Overlay);
-        gtk_layer_shell::set_keyboard_mode(&window, gtk_layer_shell::KeyboardMode::Exclusive);
-        gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
-        gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);
-        gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Left, true);
-        gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, true);
+        gtk_layer_shell::LayerShell::init_layer_shell(&window);
+        gtk_layer_shell::LayerShell::set_layer(&window, gtk_layer_shell::Layer::Overlay);
+        gtk_layer_shell::LayerShell::set_keyboard_mode(&window, gtk_layer_shell::KeyboardMode::Exclusive);
+        gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
+        gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);
+        gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Left, true);
+        gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Right, true);
 
         // Set monitor for multi-monitor mode
         if is_multi_monitor {
-            let display = gtk::gdk::Display::default().unwrap();
-            let center_x = output.rect.x + (output.rect.width / 2);
-            let center_y = output.rect.y + (output.rect.height / 2);
-            if let Some(monitor) = display.monitor_at_point(center_x, center_y) {
-                gtk_layer_shell::set_monitor(&window, &monitor);
+            let display = gtk4::gdk::Display::default().unwrap();
+            let monitors = display.monitors();
+            for i in 0..monitors.n_items() {
+                if let Some(monitor) = monitors.item(i).and_then(|obj| obj.downcast::<gtk4::gdk::Monitor>().ok()) {
+                    let geometry = monitor.geometry();
+                    if geometry.x() <= output.rect.x && 
+                       output.rect.x < geometry.x() + geometry.width() &&
+                       geometry.y() <= output.rect.y &&
+                       output.rect.y < geometry.y() + geometry.height() {
+                        gtk_layer_shell::LayerShell::set_monitor(&window, &monitor);
+                        break;
+                    }
+                }
             }
         }
 
-        let fixed = gtk::Fixed::new();
+        let fixed = gtk4::Fixed::new();
         let mut local_key_to_con_id = HashMap::new();
 
         // Create labels for windows
         for (_idx, window_node) in windows.iter().enumerate() {
             let (x, y) = calculate_geometry(window_node, &output, args.clone());
-            let label = gtk::Label::new(Some(""));
+            let label = gtk4::Label::new(Some(""));
 
             let letter = match chars.next() {
                 Some(c) => c,
@@ -179,10 +198,15 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
             all_windows_map.insert(window_node.id, (window_node.clone(), output.clone(), letter));
 
             label.set_markup(&format!("{}", letter));
-            fixed.put(&label, x, y);
+
+            // Ensure labels are visible and properly sized on the overlay
+            label.set_halign(gtk4::Align::Center);
+            label.set_valign(gtk4::Align::Center);
+
+            fixed.put(&label, x as f64, y as f64);
 
             if window_node.focused {
-                label.style_context().add_class("focused");
+                label.add_css_class("focused");
             }
         }
 
@@ -199,103 +223,104 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         let app_ref = app.clone();
         let all_windows_map_clone = all_windows_map.clone();
 
-        window.connect_key_press_event(move |current_window, event| {
-            let keyval = event
-                .keyval()
-                .name()
-                .expect("the key pressed does not have a name?");
+        // GTK 4 uses EventControllerKey for keyboard input
+        let key_controller = gtk4::EventControllerKey::new();
+        key_controller.connect_key_pressed(move |_, keyval, _keycode, _state| {
+            let keyval_name = keyval.name();
+            if let Some(keyval_str) = keyval_name {
+                let keyval_str = keyval_str.as_str();
 
-            let window_focused = handle_keypress(
-                conn_clone.clone(),
-                &key_map.borrow(),
-                &keyval,
-                &args_clone.command.unwrap_or(Command::Focus),
-            );
+                let window_focused = handle_keypress(
+                    conn_clone.clone(),
+                    &key_map.borrow(),
+                    keyval_str,
+                    &args_clone.command.unwrap_or(Command::Focus),
+                );
 
-            if window_focused {
-                let c = keyval.chars().next().unwrap();
-                let show_confirmation = args_clone.show_confirmation.unwrap_or(true);
+                if window_focused {
+                    let c = keyval_str.chars().next().unwrap();
+                    let show_confirmation = args_clone.show_confirmation.unwrap_or(true);
 
-                if is_multi_monitor {
-                    // Hide all windows immediately
-                    for w in all_windows_clone.borrow().iter() {
-                        w.hide();
-                    }
+                    if is_multi_monitor {
+                        // Hide all windows immediately
+                        for w in all_windows_clone.borrow().iter() {
+                            w.set_visible(false);
+                        }
 
-                    // Create confirmation window if enabled
-                    if show_confirmation {
-                        if let Some(con_id) = key_map.borrow().get(&c) {
-                            if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
-                                create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                        // Create confirmation window if enabled
+                        if show_confirmation {
+                            if let Some(con_id) = key_map.borrow().get(&c) {
+                                if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
+                                    create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                                }
                             }
                         }
+
+                        // Close all windows after delay (or immediately if no confirmation)
+                        let windows_to_close = all_windows_clone.borrow().clone();
+                        let delay = if show_confirmation { 500 } else { 0 };
+                        glib::timeout_add_local(Duration::from_millis(delay), move || {
+                            for w in windows_to_close.iter() {
+                                w.close();
+                            }
+                            ControlFlow::Break
+                        });
+                    } else {
+                        // Single monitor mode: create confirmation and close current window
+                        if show_confirmation {
+                            if let Some(con_id) = key_map.borrow().get(&c) {
+                                if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
+                                    create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                                }
+                            }
+                        }
+
+                        let delay = if show_confirmation { 500 } else { 0 };
+                        let current_window = all_windows_clone.borrow()[0].clone();
+                        glib::timeout_add_local(Duration::from_millis(delay), move || {
+                            current_window.close();
+                            ControlFlow::Break
+                        });
                     }
 
-                    // Close all windows after delay (or immediately if no confirmation)
-                    let windows_to_close = all_windows_clone.borrow().clone();
-                    let delay = if show_confirmation { 500 } else { 0 };
-                    glib::timeout_add_local(Duration::from_millis(delay), move || {
-                        for w in windows_to_close.iter() {
+                    glib::Propagation::Stop
+                } else {
+                    // Close windows on escape or invalid key
+                    if is_multi_monitor {
+                        for w in all_windows_clone.borrow().iter() {
                             w.close();
                         }
-                        glib::Continue(false)
-                    });
-                } else {
-                    // Single monitor mode: create confirmation and close current window
-                    if show_confirmation {
-                        if let Some(con_id) = key_map.borrow().get(&c) {
-                            if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
-                                create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
-                            }
-                        }
+                    } else {
+                        let current_window = all_windows_clone.borrow()[0].clone();
+                        current_window.close();
                     }
-
-                    let delay = if show_confirmation { 500 } else { 0 };
-                    glib::timeout_add_local(Duration::from_millis(delay), {
-                        let window = current_window.clone();
-                        move || {
-                            window.close();
-                            glib::Continue(false)
-                        }
-                    });
+                    glib::Propagation::Stop
                 }
-
-                Inhibit(true)
             } else {
-                // Close windows on escape or invalid key
-                if is_multi_monitor {
-                    for w in all_windows_clone.borrow().iter() {
-                        w.close();
-                    }
-                } else {
-                    current_window.close();
-                }
-                Inhibit(false)
+                glib::Propagation::Proceed
             }
         });
 
-        window.add(&fixed);
+        window.add_controller(key_controller);
+        window.set_child(Some(&fixed));
         all_windows.borrow_mut().push(window);
     }
 
     // Show all windows
     for window in all_windows.borrow().iter() {
-        window.show_all();
+        window.present();
     }
 }
 
 fn load_css(args: Arc<Args>) {
     let provider = CssProvider::new();
-    provider
-        .load_from_data(utils::args_to_css(&args).as_bytes())
-        .expect("failed to load css");
+    provider.load_from_data(&utils::args_to_css(&args));
 
-    // Add the provider to the default screen
-    StyleContext::add_provider_for_screen(
-        // we can unwrap because there should be a default screen
-        &gtk::gdk::Screen::default().unwrap(),
+    // Add the provider to the default display
+    gtk4::style_context_add_provider_for_display(
+        &gtk4::gdk::Display::default().unwrap(),
         &provider,
-        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 }
 

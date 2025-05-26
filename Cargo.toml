@@ -14,13 +14,10 @@ exclude = ["screenshots/*"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gtk = "0.17"
-gtk-layer-shell = { version = "0.6", features = ["v0_6"] }
-
+gtk4 = "0.9"
+gtk4-layer-shell = "0.4"
 swayipc = "3.0"
-
 clap = { version = "4.3", features = ["derive"] }
-
 figment = { version = "0.10", features = ["yaml"] }
 serde = { version = "1.0", features = ["derive"] }
-xdg = "2.5.0"
+xdg = "2.5"

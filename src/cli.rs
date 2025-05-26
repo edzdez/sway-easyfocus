@@ -91,7 +91,7 @@ pub struct Args {
     pub label_margin_y: Option<i32>,
 
     /// Show confirmation window after selection
-    #[arg(long)]
+    #[arg(long = "show-confirmation")]
     pub show_confirmation: Option<bool>,
 
     /// The selected command
