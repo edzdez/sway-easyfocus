@@ -66,71 +66,10 @@ fn handle_keypress(
     false
 }
 
-fn create_confirmation_window(
-    app: &Application,
-    args: Arc<Args>,
-    window_node: &Node,
-    output: &Node,
-    selected_char: char,
-) {
-    let confirm_window = gtk4::ApplicationWindow::new(app);
-
-    // Configure as layer shell
-    gtk_layer_shell::LayerShell::init_layer_shell(&confirm_window);
-    gtk_layer_shell::LayerShell::set_layer(&confirm_window, gtk_layer_shell::Layer::Overlay);
-    gtk_layer_shell::LayerShell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Top, true);
-    gtk_layer_shell::LayerShell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Bottom, true);
-    gtk_layer_shell::LayerShell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Left, true);
-    gtk_layer_shell::LayerShell::set_anchor(&confirm_window, gtk_layer_shell::Edge::Right, true);
-
-    // Set on correct monitor
-    let display = gtk4::gdk::Display::default().unwrap();
-    let monitors = display.monitors();
-    for i in 0..monitors.n_items() {
-        if let Some(monitor) = monitors.item(i).and_then(|obj| obj.downcast::<gtk4::gdk::Monitor>().ok()) {
-            let geometry = monitor.geometry();
-            if geometry.x() <= output.rect.x && 
-               output.rect.x < geometry.x() + geometry.width() &&
-               geometry.y() <= output.rect.y &&
-               output.rect.y < geometry.y() + geometry.height() {
-                gtk_layer_shell::LayerShell::set_monitor(&confirm_window, &monitor);
-                break;
-            }
-        }
-    }
-
-    // Create a fixed container for positioning
-    let fixed = gtk4::Fixed::new();
-
-    // Add label at correct position
-    let (x, y) = calculate_geometry(window_node, output, args);
-    let label = gtk4::Label::new(Some(&selected_char.to_string()));
-    label.add_css_class("selected");
-    fixed.put(&label, x as f64, y as f64);
-
-    confirm_window.set_child(Some(&fixed));
-    confirm_window.present();
-
-    // Set timeout to close
-    glib::timeout_add_local(Duration::from_millis(500), move || {
-        confirm_window.close();
-        ControlFlow::Break
-    });
-}
-
 fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
-    // Determine if we're in single or multi-monitor mode
     let output_nodes = sway::get_all_output_nodes(conn.clone());
-    let is_multi_monitor = output_nodes.len() > 1;
 
-    // Get the outputs to process
-    let outputs_to_process = if is_multi_monitor {
-        output_nodes
-    } else {
-        vec![sway::get_focused_output(conn.clone())]
-    };
-
-    // Shared state for multi-monitor mode
+    // Shared state for all monitors
     let all_key_to_con_id: Rc<RefCell<HashMap<char, i64>>> = Rc::new(RefCell::new(HashMap::new()));
     let all_windows: Rc<RefCell<Vec<gtk4::ApplicationWindow>>> = Rc::new(RefCell::new(Vec::new()));
     let mut all_windows_map: HashMap<i64, (Node, Node, char)> = HashMap::new();
@@ -140,7 +79,7 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     let mut chars = letters.chars();
 
     // Process each output
-    for output in outputs_to_process {
+    for output in output_nodes {
         let workspace = sway::get_focused_workspace(&output);
         let windows = sway::get_all_windows(&workspace);
 
@@ -161,20 +100,18 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Left, true);
         gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Right, true);
 
-        // Set monitor for multi-monitor mode
-        if is_multi_monitor {
-            let display = gtk4::gdk::Display::default().unwrap();
-            let monitors = display.monitors();
-            for i in 0..monitors.n_items() {
-                if let Some(monitor) = monitors.item(i).and_then(|obj| obj.downcast::<gtk4::gdk::Monitor>().ok()) {
-                    let geometry = monitor.geometry();
-                    if geometry.x() <= output.rect.x && 
-                       output.rect.x < geometry.x() + geometry.width() &&
-                       geometry.y() <= output.rect.y &&
-                       output.rect.y < geometry.y() + geometry.height() {
-                        gtk_layer_shell::LayerShell::set_monitor(&window, &monitor);
-                        break;
-                    }
+        // Set monitor for this output
+        let display = gtk4::gdk::Display::default().unwrap();
+        let monitors = display.monitors();
+        for i in 0..monitors.n_items() {
+            if let Some(monitor) = monitors.item(i).and_then(|obj| obj.downcast::<gtk4::gdk::Monitor>().ok()) {
+                let geometry = monitor.geometry();
+                if geometry.x() <= output.rect.x && 
+                   output.rect.x < geometry.x() + geometry.width() &&
+                   geometry.y() <= output.rect.y &&
+                   output.rect.y < geometry.y() + geometry.height() {
+                    gtk_layer_shell::LayerShell::set_monitor(&window, &monitor);
+                    break;
                 }
             }
         }
@@ -210,12 +147,8 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
             }
         }
 
-        // Set up key handler
-        let key_map = if is_multi_monitor {
-            all_key_to_con_id.clone()
-        } else {
-            Rc::new(RefCell::new(local_key_to_con_id))
-        };
+        // Set up key handler - use global key map for both single and multi-monitor
+        let key_map = all_key_to_con_id.clone();
 
         let all_windows_clone = all_windows.clone();
         let args_clone = args.clone();
@@ -240,62 +173,14 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                     let c = keyval_str.chars().next().unwrap();
                     let show_confirmation = args_clone.show_confirmation.unwrap_or(true);
 
-                    if is_multi_monitor {
-                        // Find and update the selected label, hide all other labels
-                        if show_confirmation {
-                            if let Some(con_id) = key_map.borrow().get(&c) {
-                                if let Some((_, _, _)) = all_windows_map_clone.get(con_id) {
-                                    // Find the label for this character across all windows
-                                    for window in all_windows_clone.borrow().iter() {
-                                        let mut found_selected_label = false;
-                                        if let Some(fixed) = window.child().and_then(|c| c.downcast::<gtk4::Fixed>().ok()) {
-                                            let mut child = fixed.first_child();
-                                            while let Some(widget) = child {
-                                                child = widget.next_sibling(); // Get next sibling before moving widget
-                                                if let Ok(label) = widget.downcast::<gtk4::Label>() {
-                                                    if label.text() == c.to_string() {
-                                                        // Update the CSS class to make it look like confirmation
-                                                        label.remove_css_class("focused");
-                                                        label.add_css_class("selected");
-                                                        found_selected_label = true;
-                                                    } else {
-                                                        // Hide all other labels
-                                                        label.set_visible(false);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        // Hide windows that don't contain the selected label
-                                        if !found_selected_label {
-                                            window.set_visible(false);
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            // If no confirmation, hide all windows immediately
-                            for w in all_windows_clone.borrow().iter() {
-                                w.set_visible(false);
-                            }
-                        }
-
-                        // Close all windows after delay (or immediately if no confirmation)
-                        let windows_to_close = all_windows_clone.borrow().clone();
-                        let delay = if show_confirmation { 500 } else { 0 };
-                        glib::timeout_add_local(Duration::from_millis(delay), move || {
-                            for w in windows_to_close.iter() {
-                                w.close();
-                            }
-                            ControlFlow::Break
-                        });
-                    } else {
-                        // Single monitor mode: update the selected label, hide others
-                        if show_confirmation {
-                            if let Some(con_id) = key_map.borrow().get(&c) {
-                                if let Some((_, _, _)) = all_windows_map_clone.get(con_id) {
-                                    // Find and update the selected label, hide all others
-                                    let current_window = &all_windows_clone.borrow()[0];
-                                    if let Some(fixed) = current_window.child().and_then(|c| c.downcast::<gtk4::Fixed>().ok()) {
+                    // Find and update the selected label, hide all other labels
+                    if show_confirmation {
+                        if let Some(con_id) = key_map.borrow().get(&c) {
+                            if let Some((_, _, _)) = all_windows_map_clone.get(con_id) {
+                                // Find the label for this character across all windows
+                                for window in all_windows_clone.borrow().iter() {
+                                    let mut found_selected_label = false;
+                                    if let Some(fixed) = window.child().and_then(|c| c.downcast::<gtk4::Fixed>().ok()) {
                                         let mut child = fixed.first_child();
                                         while let Some(widget) = child {
                                             child = widget.next_sibling(); // Get next sibling before moving widget
@@ -304,6 +189,7 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                                                     // Update the CSS class to make it look like confirmation
                                                     label.remove_css_class("focused");
                                                     label.add_css_class("selected");
+                                                    found_selected_label = true;
                                                 } else {
                                                     // Hide all other labels
                                                     label.set_visible(false);
@@ -311,28 +197,35 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                                             }
                                         }
                                     }
+                                    // Hide windows that don't contain the selected label
+                                    if !found_selected_label {
+                                        window.set_visible(false);
+                                    }
                                 }
                             }
                         }
-
-                        let delay = if show_confirmation { 500 } else { 0 };
-                        let current_window = all_windows_clone.borrow()[0].clone();
-                        glib::timeout_add_local(Duration::from_millis(delay), move || {
-                            current_window.close();
-                            ControlFlow::Break
-                        });
+                    } else {
+                        // If no confirmation, hide all windows immediately
+                        for w in all_windows_clone.borrow().iter() {
+                            w.set_visible(false);
+                        }
                     }
+
+                    // Close all windows after delay (or immediately if no confirmation)
+                    let windows_to_close = all_windows_clone.borrow().clone();
+                    let delay = if show_confirmation { 500 } else { 0 };
+                    glib::timeout_add_local(Duration::from_millis(delay), move || {
+                        for w in windows_to_close.iter() {
+                            w.close();
+                        }
+                        ControlFlow::Break
+                    });
 
                     glib::Propagation::Stop
                 } else {
                     // Close windows on escape or invalid key
-                    if is_multi_monitor {
-                        for w in all_windows_clone.borrow().iter() {
-                            w.close();
-                        }
-                    } else {
-                        let current_window = all_windows_clone.borrow()[0].clone();
-                        current_window.close();
+                    for w in all_windows_clone.borrow().iter() {
+                        w.close();
                     }
                     glib::Propagation::Stop
                 }

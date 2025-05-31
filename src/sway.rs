@@ -41,13 +41,6 @@ pub fn get_all_output_nodes(conn: Arc<Mutex<Connection>>) -> Vec<Node> {
     output_nodes
 }
 
-pub fn get_focused_output(conn: Arc<Mutex<Connection>>) -> Node {
-    let root_node = get_tree(conn);
-    root_node
-        .find_focused(|n| n.node_type == swayipc::NodeType::Output)
-        .expect("could not find focused output")
-}
-
 pub fn get_focused_workspace(output: &Node) -> Node {
     output
         .clone()
