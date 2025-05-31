@@ -110,7 +110,7 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                    output.rect.x < geometry.x() + geometry.width() &&
                    geometry.y() <= output.rect.y &&
                    output.rect.y < geometry.y() + geometry.height() {
-                    gtk_layer_shell::LayerShell::set_monitor(&window, &monitor);
+                    gtk_layer_shell::LayerShell::set_monitor(&window, Some(&monitor));
                     break;
                 }
             }

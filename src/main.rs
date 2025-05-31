@@ -14,7 +14,7 @@ mod utils;
 fn parse_config() -> Arc<Args> {
     // there is probably a way better way to do this...
     let mut args = Args::default();
-    let base_dirs = xdg::BaseDirectories::with_prefix("sway-easyfocus").unwrap();
+    let base_dirs = xdg::BaseDirectories::with_prefix("sway-easyfocus");
     let config_path = base_dirs
         .place_config_file("config.yaml")
         .expect("failed to create config directory");
