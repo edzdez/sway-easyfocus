@@ -220,7 +220,6 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         let all_windows_clone = all_windows.clone();
         let args_clone = args.clone();
         let conn_clone = conn.clone();
-        let app_ref = app.clone();
         let all_windows_map_clone = all_windows_map.clone();
 
         // GTK 4 uses EventControllerKey for keyboard input
@@ -242,17 +241,41 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                     let show_confirmation = args_clone.show_confirmation.unwrap_or(true);
 
                     if is_multi_monitor {
-                        // Hide all windows immediately
-                        for w in all_windows_clone.borrow().iter() {
-                            w.set_visible(false);
-                        }
-
-                        // Create confirmation window if enabled
+                        // Find and update the selected label, hide all other labels
                         if show_confirmation {
                             if let Some(con_id) = key_map.borrow().get(&c) {
-                                if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
-                                    create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                                if let Some((_, _, _)) = all_windows_map_clone.get(con_id) {
+                                    // Find the label for this character across all windows
+                                    for window in all_windows_clone.borrow().iter() {
+                                        let mut found_selected_label = false;
+                                        if let Some(fixed) = window.child().and_then(|c| c.downcast::<gtk4::Fixed>().ok()) {
+                                            let mut child = fixed.first_child();
+                                            while let Some(widget) = child {
+                                                child = widget.next_sibling(); // Get next sibling before moving widget
+                                                if let Ok(label) = widget.downcast::<gtk4::Label>() {
+                                                    if label.text() == c.to_string() {
+                                                        // Update the CSS class to make it look like confirmation
+                                                        label.remove_css_class("focused");
+                                                        label.add_css_class("selected");
+                                                        found_selected_label = true;
+                                                    } else {
+                                                        // Hide all other labels
+                                                        label.set_visible(false);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        // Hide windows that don't contain the selected label
+                                        if !found_selected_label {
+                                            window.set_visible(false);
+                                        }
+                                    }
                                 }
+                            }
+                        } else {
+                            // If no confirmation, hide all windows immediately
+                            for w in all_windows_clone.borrow().iter() {
+                                w.set_visible(false);
                             }
                         }
 
@@ -266,11 +289,28 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                             ControlFlow::Break
                         });
                     } else {
-                        // Single monitor mode: create confirmation and close current window
+                        // Single monitor mode: update the selected label, hide others
                         if show_confirmation {
                             if let Some(con_id) = key_map.borrow().get(&c) {
-                                if let Some((node, output, _)) = all_windows_map_clone.get(con_id) {
-                                    create_confirmation_window(&app_ref, args_clone.clone(), node, output, c);
+                                if let Some((_, _, _)) = all_windows_map_clone.get(con_id) {
+                                    // Find and update the selected label, hide all others
+                                    let current_window = &all_windows_clone.borrow()[0];
+                                    if let Some(fixed) = current_window.child().and_then(|c| c.downcast::<gtk4::Fixed>().ok()) {
+                                        let mut child = fixed.first_child();
+                                        while let Some(widget) = child {
+                                            child = widget.next_sibling(); // Get next sibling before moving widget
+                                            if let Ok(label) = widget.downcast::<gtk4::Label>() {
+                                                if label.text() == c.to_string() {
+                                                    // Update the CSS class to make it look like confirmation
+                                                    label.remove_css_class("focused");
+                                                    label.add_css_class("selected");
+                                                } else {
+                                                    // Hide all other labels
+                                                    label.set_visible(false);
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
