@@ -186,9 +186,8 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                                             child = widget.next_sibling(); // Get next sibling before moving widget
                                             if let Ok(label) = widget.downcast::<gtk4::Label>() {
                                                 if label.text() == c.to_string() {
-                                                    // Update the CSS class to make it look like confirmation
-                                                    label.remove_css_class("focused");
-                                                    label.add_css_class("selected");
+                                                    // Update the CSS class to reflect the focus has changed.
+                                                    label.add_css_class("focused");
                                                     found_selected_label = true;
                                                 } else {
                                                     // Hide all other labels

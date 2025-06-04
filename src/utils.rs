@@ -58,16 +58,6 @@ pub fn args_to_css(args: &Args) -> String {
             background: rgba({}, {}, {}, {});
             color: rgb({}, {}, {});
         }}
-
-        .selected {{
-            background: rgba({}, {}, {}, {});
-            color: rgb({}, {}, {});
-            border: 2px solid white;
-            font-family: {};
-            font-weight: {};
-            font-size: {};
-            padding: {}px {}px;
-        }}
         "#,
         window_bg.r,
         window_bg.g,
@@ -91,19 +81,6 @@ pub fn args_to_css(args: &Args) -> String {
         args.focused_background_opacity.unwrap(),
         focused_fg.r,
         focused_fg.g,
-        focused_fg.b,
-        // Use the same colors and styling as focused for confirmation/selected windows
-        focused_bg.r,
-        focused_bg.g,
-        focused_bg.b,
-        args.focused_background_opacity.unwrap(),
-        focused_fg.r,
-        focused_fg.g,
-        focused_fg.b,
-        args.font_family.as_ref().unwrap(),
-        args.font_weight.as_ref().unwrap(),
-        args.font_size.as_ref().unwrap(),
-        args.label_padding_y.unwrap() + 2,  // Slightly larger padding for confirmation
-        args.label_padding_x.unwrap() + 4   // Slightly larger padding for confirmation
+        focused_fg.b
     )
 }
