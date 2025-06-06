@@ -92,8 +92,12 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         let window = gtk4::ApplicationWindow::new(app);
 
         // Configure layer shell
+        // Setting a namespace allows WM rules to target these windows.
         gtk_layer_shell::LayerShell::init_layer_shell(&window);
+        gtk_layer_shell::LayerShell::set_namespace(&window, Some("sway-easyfocus"));
         gtk_layer_shell::LayerShell::set_layer(&window, gtk_layer_shell::Layer::Overlay);
+        // Not sure why you'd want to use the Top layer instead, but here's the syntax.
+        // gtk_layer_shell::LayerShell::set_layer(&window, gtk_layer_shell::Layer::Top);
         gtk_layer_shell::LayerShell::set_keyboard_mode(&window, gtk_layer_shell::KeyboardMode::Exclusive);
         gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
         gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);

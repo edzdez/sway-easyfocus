@@ -101,7 +101,7 @@ window ID (sway container ID).
 This program is written in [Rust](https://www.rust-lang.org/). The Rust compiler can be installed by following the
 instructions on the [official download page](https://www.rust-lang.org/tools/install).
 
-You also need to have `gtk` and `gtk-layer-shell` installed.
+You also need to have `gtk4` and `gtk4-layer-shell` installed.
 
 ```shell
 # Clone this repo
