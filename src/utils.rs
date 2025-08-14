@@ -3,13 +3,13 @@ use crate::cli::Args;
 
 // stolen from https://rust-lang-nursery.github.io/rust-cookbook/text/string_parsing.html
 #[derive(Debug, PartialEq)]
-struct RGB {
+struct Rgb {
     pub r: u8,
     pub g: u8,
     pub b: u8,
 }
 
-impl FromStr for RGB {
+impl FromStr for Rgb {
     type Err = std::num::ParseIntError;
 
     // Parses a color hex code of the form '#rRgGbB..' into an
@@ -21,22 +21,22 @@ impl FromStr for RGB {
         let g: u8 = u8::from_str_radix(&hex_code[2..4], 16)?;
         let b: u8 = u8::from_str_radix(&hex_code[4..6], 16)?;
 
-        Ok(RGB { r, g, b })
+        Ok(Rgb { r, g, b })
     }
 }
 
 pub fn args_to_css(args: &Args) -> String {
-    let window_bg = RGB::from_str(args.window_background_color.as_ref().unwrap())
+    let window_bg = Rgb::from_str(args.window_background_color.as_ref().unwrap())
         .expect("invalid color for window_background_color");
 
-    let label_bg = RGB::from_str(args.label_background_color.as_ref().unwrap())
+    let label_bg = Rgb::from_str(args.label_background_color.as_ref().unwrap())
         .expect("invalid color for label_background_color");
-    let label_fg = RGB::from_str(args.label_text_color.as_ref().unwrap())
+    let label_fg = Rgb::from_str(args.label_text_color.as_ref().unwrap())
         .expect("invalid color for label_text_color");
 
-    let focused_bg = RGB::from_str(args.focused_background_color.as_ref().unwrap())
+    let focused_bg = Rgb::from_str(args.focused_background_color.as_ref().unwrap())
         .expect("invalid color for focused_background_color");
-    let focused_fg = RGB::from_str(args.focused_text_color.as_ref().unwrap())
+    let focused_fg = Rgb::from_str(args.focused_text_color.as_ref().unwrap())
         .expect("invalid color for focused_text_color");
 
     format!(

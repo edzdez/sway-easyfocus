@@ -29,7 +29,7 @@ pub fn get_all_output_nodes(conn: Arc<Mutex<Connection>>) -> Vec<Node> {
         let node = q.pop_back().unwrap();
 
         // If we have an output node (and it's not a special/virtual output)
-        if (node.node_type == NodeType::Output) && !node.nodes.is_empty() && node.name.as_ref().map_or(true, |name| name != "__i3" && name != "__i3_scratch") {
+        if (node.node_type == NodeType::Output) && !node.nodes.is_empty() && node.name.as_ref().is_none_or(|name| name != "__i3" && name != "__i3_scratch") {
             output_nodes.push(node.clone());
         }
 

@@ -1,15 +1,18 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use std::cell::RefCell;
-use std::rc::Rc;
 
-use gtk4::{prelude::*, Application, CssProvider, glib};
 use gtk4::glib::ControlFlow;
+use gtk4::{glib, prelude::*, Application, CssProvider};
 use gtk4_layer_shell as gtk_layer_shell;
 use swayipc::{Connection, Node, NodeLayout};
 
 use crate::{cli::Args, cli::Command, sway, utils};
+
+// Type alias for window mapping data: (window_node, output_node, label_char)
+type WindowMapData = HashMap<i64, (Node, Node, char)>;
 
 fn calculate_geometry(window: &Node, output: &Node, args: Arc<Args>) -> (i32, i32) {
     // dbg!(&window);
@@ -72,7 +75,7 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
     // Shared state for all monitors
     let all_key_to_con_id: Rc<RefCell<HashMap<char, i64>>> = Rc::new(RefCell::new(HashMap::new()));
     let all_windows: Rc<RefCell<Vec<gtk4::ApplicationWindow>>> = Rc::new(RefCell::new(Vec::new()));
-    let mut all_windows_map: HashMap<i64, (Node, Node, char)> = HashMap::new();
+    let all_windows_map: Rc<RefCell<WindowMapData>> = Rc::new(RefCell::new(HashMap::new()));
 
     // Get global character sequence
     let letters = args.chars.clone().expect("Some characters are required");
@@ -96,24 +99,32 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         gtk_layer_shell::LayerShell::init_layer_shell(&window);
         gtk_layer_shell::LayerShell::set_namespace(&window, Some("sway-easyfocus"));
         gtk_layer_shell::LayerShell::set_layer(&window, gtk_layer_shell::Layer::Overlay);
-        // Not sure why you'd want to use the Top layer instead, but here's the syntax.
-        // gtk_layer_shell::LayerShell::set_layer(&window, gtk_layer_shell::Layer::Top);
-        gtk_layer_shell::LayerShell::set_keyboard_mode(&window, gtk_layer_shell::KeyboardMode::Exclusive);
+        gtk_layer_shell::LayerShell::set_keyboard_mode(
+            &window,
+            gtk_layer_shell::KeyboardMode::Exclusive,
+        );
         gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
         gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);
         gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Left, true);
         gtk_layer_shell::LayerShell::set_anchor(&window, gtk_layer_shell::Edge::Right, true);
 
         // Set monitor for this output
+        // This is necessary because Sway outputs (logical displays in the window manager) need to
+        // be mapped to GTK/GDK monitors (physical displays as seen by GTK) so that the overlay
+        // labels appear on the correct physical screen in a multi-monitor setup.
         let display = gtk4::gdk::Display::default().unwrap();
         let monitors = display.monitors();
         for i in 0..monitors.n_items() {
-            if let Some(monitor) = monitors.item(i).and_then(|obj| obj.downcast::<gtk4::gdk::Monitor>().ok()) {
+            if let Some(monitor) = monitors
+                .item(i)
+                .and_then(|obj| obj.downcast::<gtk4::gdk::Monitor>().ok())
+            {
                 let geometry = monitor.geometry();
-                if geometry.x() <= output.rect.x && 
-                   output.rect.x < geometry.x() + geometry.width() &&
-                   geometry.y() <= output.rect.y &&
-                   output.rect.y < geometry.y() + geometry.height() {
+                if geometry.x() <= output.rect.x
+                    && output.rect.x < geometry.x() + geometry.width()
+                    && geometry.y() <= output.rect.y
+                    && output.rect.y < geometry.y() + geometry.height()
+                {
                     gtk_layer_shell::LayerShell::set_monitor(&window, Some(&monitor));
                     break;
                 }
@@ -121,22 +132,25 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
         }
 
         let fixed = gtk4::Fixed::new();
-        let mut local_key_to_con_id = HashMap::new();
 
         // Create labels for windows
-        for (_idx, window_node) in windows.iter().enumerate() {
+        for window_node in windows.iter() {
             let (x, y) = calculate_geometry(window_node, &output, args.clone());
             let label = gtk4::Label::new(Some(""));
 
-            let letter = match chars.next() {
-                Some(c) => c,
-                None => 'a', // Fallback if we run out of characters
-            };
+            let letter = chars.next().expect(
+                "Ran out of characters for highlighting windows. Consider using a longer \
+                 character set with --chars or reduce the number of visible windows.",
+            );
 
             // Store mappings
-            local_key_to_con_id.insert(letter, window_node.id);
-            all_key_to_con_id.borrow_mut().insert(letter, window_node.id);
-            all_windows_map.insert(window_node.id, (window_node.clone(), output.clone(), letter));
+            all_key_to_con_id
+                .borrow_mut()
+                .insert(letter, window_node.id);
+            all_windows_map.borrow_mut().insert(
+                window_node.id,
+                (window_node.clone(), output.clone(), letter),
+            );
 
             label.set_markup(&format!("{}", letter));
 
@@ -180,17 +194,21 @@ fn build_ui(app: &Application, args: Arc<Args>, conn: Arc<Mutex<Connection>>) {
                     // Find and update the selected label, hide all other labels
                     if show_confirmation {
                         if let Some(con_id) = key_map.borrow().get(&c) {
-                            if let Some((_, _, _)) = all_windows_map_clone.get(con_id) {
+                            if let Some((_, _, _)) = all_windows_map_clone.borrow().get(con_id) {
                                 // Find the label for this character across all windows
                                 for window in all_windows_clone.borrow().iter() {
                                     let mut found_selected_label = false;
-                                    if let Some(fixed) = window.child().and_then(|c| c.downcast::<gtk4::Fixed>().ok()) {
+                                    if let Some(fixed) = window
+                                        .child()
+                                        .and_then(|c| c.downcast::<gtk4::Fixed>().ok())
+                                    {
                                         let mut child = fixed.first_child();
                                         while let Some(widget) = child {
-                                            child = widget.next_sibling(); // Get next sibling before moving widget
+                                            // Get next sibling before moving widget
+                                            child = widget.next_sibling();
                                             if let Ok(label) = widget.downcast::<gtk4::Label>() {
                                                 if label.text() == c.to_string() {
-                                                    // Update the CSS class to reflect the focus has changed.
+                                                    // Update CSS class to reflect focus change
                                                     label.add_css_class("focused");
                                                     found_selected_label = true;
                                                 } else {
