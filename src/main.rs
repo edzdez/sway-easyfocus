@@ -1,10 +1,10 @@
-use std::sync::{Arc, Mutex};
 use clap::Parser;
+use cli::Args;
 use figment::{
     providers::{Format, Yaml},
     Figment,
 };
-use cli::Args;
+use std::sync::{Arc, Mutex};
 
 mod cli;
 mod sway;

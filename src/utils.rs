@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use crate::cli::Args;
+use std::str::FromStr;
 
 // stolen from https://rust-lang-nursery.github.io/rust-cookbook/text/string_parsing.html
 #[derive(Debug, PartialEq)]
