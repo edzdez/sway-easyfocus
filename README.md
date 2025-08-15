@@ -33,6 +33,8 @@ label_padding_x: 4
 label_padding_y: 0
 label_margin_x: 4
 label_margin_y: 2
+
+show_confirmation: true
 ```
 
 ## Usage
@@ -81,6 +83,8 @@ Options:
           set the label margin-x <px>
       --label-margin-y <LABEL_MARGIN_Y>
           set the label margin-y <px>
+      --show-confirmation <SHOW_CONFIRMATION>
+          Show confirmation window after selection [possible values: true, false]
   -h, --help
           Print help
   -V, --version
@@ -97,7 +101,7 @@ window ID (sway container ID).
 This program is written in [Rust](https://www.rust-lang.org/). The Rust compiler can be installed by following the
 instructions on the [official download page](https://www.rust-lang.org/tools/install).
 
-You also need to have `gtk` and `gtk-layer-shell` installed.
+You also need to have `gtk4` and `gtk4-layer-shell` installed.
 
 ```shell
 # Clone this repo

@@ -16,11 +16,35 @@ pub fn get_tree(conn: Arc<Mutex<Connection>>) -> Node {
         .expect("failed to communicate with sway")
 }
 
-pub fn get_focused_output(conn: Arc<Mutex<Connection>>) -> Node {
+// Get all output nodes, focused or not
+pub fn get_all_output_nodes(conn: Arc<Mutex<Connection>>) -> Vec<Node> {
+    let mut output_nodes = vec![];
+    let mut q = VecDeque::new();
     let root_node = get_tree(conn);
-    root_node
-        .find_focused(|n| n.node_type == swayipc::NodeType::Output)
-        .expect("could not find focused output")
+
+    q.push_back(root_node);
+
+    while !q.is_empty() {
+        // We can unwrap because we know the queue is not empty
+        let node = q.pop_back().unwrap();
+
+        // If we have an output node (and it's not a special/virtual output)
+        if (node.node_type == NodeType::Output)
+            && !node.nodes.is_empty()
+            && node
+                .name
+                .as_ref()
+                .is_none_or(|name| name != "__i3" && name != "__i3_scratch")
+        {
+            output_nodes.push(node.clone());
+        }
+
+        // Look for more outputs in the children
+        for child in node.nodes {
+            q.push_back(child.clone());
+        }
+    }
+    output_nodes
 }
 
 pub fn get_focused_workspace(output: &Node) -> Node {
@@ -61,12 +85,10 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
             q.push_back(c);
         }
 
-        /*
         // floating nodes
         for child in node.floating_nodes {
             q.push_back(child.clone());
         }
-        */
     }
 
     nodes.reverse();
