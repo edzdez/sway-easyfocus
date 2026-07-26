@@ -52,6 +52,61 @@ impl Default for Options {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+    use figment::{
+        providers::{Format, Yaml},
+        Figment,
+    };
+
+    use super::*;
+
+    #[test]
+    fn config_without_show_confirmation_keeps_default_true() {
+        let args = Figment::new()
+            .merge(Yaml::string("chars: abc\n"))
+            .extract::<Args>()
+            .unwrap();
+        let mut opts = Options::default();
+
+        opts.merge(&args);
+
+        assert_eq!(opts.chars, "abc");
+        assert!(opts.show_confirmation);
+    }
+
+    #[test]
+    fn config_can_disable_show_confirmation() {
+        let args = Figment::new()
+            .merge(Yaml::string("show_confirmation: false\n"))
+            .extract::<Args>()
+            .unwrap();
+        let mut opts = Options::default();
+
+        opts.merge(&args);
+
+        assert!(!opts.show_confirmation);
+    }
+
+    #[test]
+    fn absent_cli_flag_keeps_default_true() {
+        let args = Args::try_parse_from(["sway-easyfocus"]).unwrap();
+        let mut opts = Options::default();
+
+        opts.merge(&args);
+
+        assert!(opts.show_confirmation);
+    }
+
+    #[test]
+    fn cli_flag_sets_show_confirmation_true() {
+        let args = Args::try_parse_from(["sway-easyfocus", "--show-confirmation"]).unwrap();
+
+        assert_eq!(args.show_confirmation, Some(true));
+    }
+}
+
 impl Options {
     pub fn merge(&mut self, args: &Args) {
         macro_rules! update {
@@ -78,7 +133,7 @@ impl Options {
         update!(label_padding_y);
         update!(label_margin_x);
         update!(label_margin_y);
-        self.show_confirmation = args.show_confirmation;
+        update!(show_confirmation);
         update!(command);
     }
 

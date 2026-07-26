@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 
 use serde::Deserialize;
 
@@ -93,8 +93,13 @@ pub struct Args {
     pub label_margin_y: Option<i32>,
 
     /// Show confirmation window after selection
-    #[arg(long = "show-confirmation")]
-    pub show_confirmation: bool,
+    #[arg(
+        long = "show-confirmation",
+        action = ArgAction::Set,
+        default_missing_value = "true",
+        num_args = 0..=1
+    )]
+    pub show_confirmation: Option<bool>,
 
     /// The selected command
     #[command(subcommand)]
