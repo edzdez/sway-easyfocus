@@ -22,7 +22,14 @@ fn calculate_geometry(
     let anchor_x = output.rect.x;
     let anchor_y = output.rect.y;
 
-    let rel_x = rect.x + window_rect.x + deco_rect.x + opts.label_margin_x;
+    // deco_rect.x is absolute (sway::get_all_windows); a tab's title bar
+    // starts at its tab, not at the container.
+    let title_x = if deco_rect.height > 0 {
+        deco_rect.x
+    } else {
+        rect.x
+    };
+    let rel_x = title_x + window_rect.x + opts.label_margin_x;
     let rel_y = rect.y - (deco_rect.height - opts.label_margin_y)
         + if window.layout == swayipc::NodeLayout::Stacked {
             deco_rect.y
@@ -61,7 +68,7 @@ fn handle_keypress(
                         println!("{}", con_id);
                         Ok(Some(c))
                     }
-                }
+                };
             }
         }
     }
