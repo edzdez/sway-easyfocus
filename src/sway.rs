@@ -34,6 +34,16 @@ pub fn find_focused_workspace(output: &Node) -> Option<Node> {
         .find_focused(|n| n.node_type == swayipc::NodeType::Workspace)
 }
 
+// sway reports deco_rect relative to the parent container (to the workspace
+// for its direct children and for floating windows), while rect is absolute.
+// Makes deco_rect.x absolute. Without a title bar deco_rect is all zero and
+// stays so.
+fn make_title_bar_x_absolute(child: &mut Node, parent: &Node) {
+    if child.deco_rect.height > 0 {
+        child.deco_rect.x += parent.rect.x;
+    }
+}
+
 pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
     let mut nodes = Vec::new();
     let mut q = VecDeque::new();
@@ -50,6 +60,7 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
         // tiled/tabbed/stacked nodes
         for child in &node.nodes {
             let mut c = child.clone();
+            title_bar_to_absolute(&mut c, &node);
             // a bit of a hack to keep track of stacked/tabbed layouts:
             // if we're stacked, we set our childrens' layouts to stacked and change the decorator
             // height.
@@ -64,7 +75,9 @@ pub fn get_all_windows(workspace: &Node) -> Vec<Node> {
 
         // floating nodes
         for child in &node.floating_nodes {
-            q.push_back(child.clone());
+            let mut c = child.clone();
+            title_bar_to_absolute(&mut c, &node);
+            q.push_back(c);
         }
     }
 
